@@ -1,6 +1,6 @@
 import { concat } from '@utils/concat';
 import { TTaskEditCommon } from '@type/schemas/projects/tasks';
-import { TGetSqlReturn } from '@type/sql';
+import { TUpdateDependentSql } from '@type/sql';
 
 export const TASK_SQL = {
     deleteSql: {
@@ -73,8 +73,8 @@ export const TASK_SQL = {
             taskId: number,
             tagIds: number[] | undefined,
             deleteTagIds: number[] | undefined
-        ): TGetSqlReturn => {
-            const insertSql = tagIds && TASK_SQL.createSql.getInsertTagsSql(taskId, tagIds);
+        ): TUpdateDependentSql => {
+            const insertSql = tagIds && [TASK_SQL.createSql.getInsertTagsSql(taskId, tagIds)];
             const deleteSql =
                 deleteTagIds &&
                 `

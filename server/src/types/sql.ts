@@ -1,7 +1,7 @@
 export type TDependency<I, T> = Partial<I> & T;
-export type TGetSqlReturn = [undefined | string, undefined | string, string?];
+export type TUpdateDependentSql = [Array<string> | undefined, string | undefined, string?];
 export type TGetSql<T> = (
-    projectId: number,
+    id: number,
     data: Array<T> | undefined,
     deleteData: number[] | undefined
-) => TGetSqlReturn;
+) => TUpdateDependentSql;
