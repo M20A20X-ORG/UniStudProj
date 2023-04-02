@@ -1,0 +1,11 @@
+{
+  "name": "UniStudProj",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/M20A20X-ORG/UniStudProj.git",
+  "author": "Maksym Shapovalov <maks0681912507@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "husky": "^8.0.3"
+  }
+}
