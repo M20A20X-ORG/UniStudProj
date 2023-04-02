@@ -1,0 +1,61 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "plugin:@typescript-eslint/recommended",
+    "plugin:sonarjs/recommended",
+    "prettier",
+    "plugin:prettier/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "root": true,
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "sonarjs",
+    "prettier"
+  ],
+  "rules": {
+    "prettier/prettier": "warn",
+    "no-alert": "warn",
+    "no-console": "warn",
+    "import/order": "warn",
+    "import/prefer-default-export": "off",
+    "react/destructuring-assignment": "off",
+    "react/require-default-props": "off",
+    "react/function-component-definition": "off",
+    "no-unused-vars": "off",
+    "operator-linebreak": [
+      "warn",
+      "before"
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "warn"
+    ]
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": [
+        ".ts"
+      ],
+      "node": {
+        "extensions": [
+          ".js",
+          ".ts"
+        ],
+        "moduleDirectory": [
+          "node_modules/"
+        ]
+      }
+    }
+  }
+}

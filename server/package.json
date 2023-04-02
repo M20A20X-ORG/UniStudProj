@@ -1,0 +1,43 @@
+{
+  "name": "unistudproj-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "yarn tsc && yarn tsc-alias",
+    "start": "node dist/index.js",
+    "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\" \"nodemon -q dist/index.js\")",
+    "lint": "eslint --cache",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mysql2": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/node": "^18.15.11",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "concurrently": "^8.0.1",
+    "eslint": "^8.37.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-standard-with-typescript": "^34.0.1",
+    "eslint-import-resolver-typescript": "^3.5.4",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.7.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-sonarjs": "^0.19.0",
+    "nodemon": "^2.0.22",
+    "prettier": "^2.8.7",
+    "tsc-alias": "^1.8.5",
+    "typescript": "^5.0.3"
+  }
+}
