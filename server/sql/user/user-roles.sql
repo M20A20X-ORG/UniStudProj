@@ -1,4 +1,4 @@
-USE `unsistudproj`;
+USE `unistudproj`;
 
 DROP TABLE IF EXISTS `tbl_user_roles`;
 CREATE TABLE `tbl_user_roles`

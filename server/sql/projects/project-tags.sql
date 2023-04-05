@@ -1,4 +1,4 @@
-USE `unsistudproj`;
+USE `unistudproj`;
 
 DROP TABLE IF EXISTS `tbl_project_tags`;
 CREATE TABLE `tbl_project_tags`

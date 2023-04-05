@@ -1,4 +1,4 @@
-USE `unsistudproj`;
+USE `unistudproj`;
 
 DROP TABLE IF EXISTS `tbl_question_prog_langs`;
 CREATE TABLE `tbl_question_prog_langs`
