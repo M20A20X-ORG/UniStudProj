@@ -1,7 +1,8 @@
 import { concat } from '@utils/concat.js';
+import { ServerError } from '@exceptions/ServerError';
 
-export class DBEmptyResponseError extends Error {
-    constructor(message) {
-        super(`Error - empty response from database!${concat(message, ', ')}`);
+export class DBEmptyResponseError extends ServerError {
+    constructor(...message: string[]) {
+        super(`Empty response from database!${concat(message, ', ')}`);
     }
 }
