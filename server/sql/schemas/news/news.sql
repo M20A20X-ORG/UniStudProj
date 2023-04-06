@@ -3,7 +3,7 @@ USE `unistudproj`;
 DROP TABLE IF EXISTS `tbl_news`;
 CREATE TABLE `tbl_news`
 (
-    `news_id`   INT,
+    `news_id`   INT AUTO_INCREMENT,
     `author_id` INT          NULL,
     `heading`   VARCHAR(50)  NOT NULL,
     `text`      VARCHAR(500) NOT NULL,

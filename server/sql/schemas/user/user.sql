@@ -3,7 +3,7 @@ USE `unistudproj`;
 DROP TABLE IF EXISTS `tbl_users`;
 CREATE TABLE `tbl_users`
 (
-    `user_id`  INT,
+    `user_id`  INT AUTO_INCREMENT,
     `role_id`  INT          NOT NULL,
     `name`     VARCHAR(30)  NOT NULL,
     `email`    VARCHAR(30)  NOT NULL,
