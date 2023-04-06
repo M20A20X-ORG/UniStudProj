@@ -3,7 +3,7 @@ USE `unistudproj`;
 DROP TABLE IF EXISTS `tbl_projects`;
 CREATE TABLE `tbl_projects`
 (
-    `project_id`          INT,
+    `project_id`          INT AUTO_INCREMENT,
     `name`                VARCHAR(30)  NOT NULL,
     `participants_amount` INT          NOT NULL,
     `description`         VARCHAR(200) NULL,
