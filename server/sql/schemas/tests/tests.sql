@@ -3,7 +3,7 @@ USE `unistudproj`;
 DROP TABLE IF EXISTS `tbl_tests`;
 CREATE TABLE `tbl_tests`
 (
-    `test_id`          INT,
+    `test_id`          INT AUTO_INCREMENT,
     `name`             VARCHAR(30) NOT NULL,
     `time_limit`       INT         NOT NULL,
     `questions_amount` INT         NOT NULL,
