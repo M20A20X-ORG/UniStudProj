@@ -1,10 +1,10 @@
-import { TUser, TUserAuth, TUserDB, TUserDBPartial } from '@type/schemas/user';
+import { TUser, TUserAuth, TUserPartial } from '@type/schemas/user';
 
 interface IUsersService {
-    getUser?: (userIdentifier: number | string) => TUserDB;
+    getUser?: (userIdentifier: number | string) => TUser;
     registerUser?: (userData: TUser) => string;
-    loginUser?: (userCredentials: TUserAuth) => TUserDB;
-    editUser?: (userData: TUserDBPartial) => string;
+    loginUser?: (userCredentials: TUserAuth) => TUser;
+    editUser?: (userData: TUserPartial) => string;
     deleteUser?: (userId: number) => string;
 }
 
