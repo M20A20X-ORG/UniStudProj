@@ -1,7 +1,7 @@
 import { JSONSchemaType } from 'ajv';
-import { TUserAuth, TUserJson, TUserPartial } from '@type/schemas/user';
+import { TUserJson, TUserLogin } from '@type/schemas/user';
 
-type TLoginSchema = JSONSchemaType<TUserJson<TUserAuth>>;
+type TLoginSchema = JSONSchemaType<TUserJson<TUserLogin>>;
 
 export const loginSchema: TLoginSchema = {
     $id: 'UserLoginSchema',
