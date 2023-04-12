@@ -11,7 +11,7 @@ import {
     verify,
     VerifyOptions
 } from 'jsonwebtoken';
-import { TAuthPayload, TRefreshToken } from '@type/schemas/user';
+import { TAuthPayload, TRefreshToken } from '@type/schemas/auth';
 
 import { InvalidAccessRolesError } from '@exceptions/InvalidAccessRolesError';
 import { AuthorizationError } from '@exceptions/AuthorizationError';
@@ -75,7 +75,7 @@ class AuthImpl implements Auth {
     public authorizeAccess = (userData: TAuthPayload, requiredRoles: string[]): void => {
         const accessRole = userData.role;
         if (!accessRole) throw new AuthorizationError('No role!');
-        else if (requiredRoles.includes(accessRole)) throw new AuthorizationError(accessRole);
+        else if (!requiredRoles.includes(accessRole)) throw new AuthorizationError(accessRole);
     };
 }
 

@@ -1,5 +1,6 @@
 import { JSONSchemaType } from 'ajv';
-import { TUserJson, TUserLogin } from '@type/schemas/user';
+import { TUserLogin } from '@type/schemas/auth';
+import { TUserJson } from '@type/schemas/user';
 
 type TLoginSchema = JSONSchemaType<TUserJson<TUserLogin>>;
 
