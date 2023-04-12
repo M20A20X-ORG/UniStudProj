@@ -4,10 +4,11 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "rm -rf dist/ && tsc && tsc-alias",
     "start": "node dist/index.js",
-    "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\" \"nodemon -q dist/index.js\")",
-    "debug": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\" \"nodemon --inspect -q dist/index.js\")",
+    "watch": "concurrently \"tsc -w\" \"tsc-alias -w\"",
+    "dev": "nodemon -q dist/index.js",
+    "debug": "nodemon -q --inspect dist/index.js",
     "lint": "eslint --cache",
     "lint:fix": "eslint --fix",
     "format": "prettier --write"
@@ -40,6 +41,7 @@
     "lint-staged": "^13.2.0",
     "nodemon": "^2.0.22",
     "prettier": "^2.8.7",
+    "ts-node": "^10.9.1",
     "tsc-alias": "^1.8.5",
     "typescript": "^5.0.3"
   }
