@@ -4,12 +4,11 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "rm -rf dist/ && tsc && tsc-alias",
     "start": "node dist/index.js",
-    "watch-ts": "concurrently \"tsc -w\" \"tsc-alias -w\"",
-    "nodemon": "nodemon -q dist/index.js",
-    "dev": "yarn build && concurrently \"yarn watch-ts\" \"yarn nodemon\"",
-    "debug": "yarn build && concurrently \"yarn watch-ts\" \"yarn nodemon --inspect\"",
+    "watch": "concurrently \"tsc -w\" \"tsc-alias -w\"",
+    "dev": "nodemon -q dist/index.js",
+    "debug": "nodemon -q --inspect dist/index.js",
     "lint": "eslint --cache",
     "lint:fix": "eslint --fix",
     "format": "prettier --write"
