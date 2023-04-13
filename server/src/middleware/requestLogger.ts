@@ -10,5 +10,5 @@ export const logRequest: RequestHandler = (req, res, next) => {
             httpVersion: req.httpVersionMinor
         })}`
     );
-    next();
+    return next();
 };
