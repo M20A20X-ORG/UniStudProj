@@ -30,6 +30,6 @@ export const requireAuth = (...requiredRoles: string[]): RequestHandler => {
             log.err(stack ?? message);
             return res.status(500).json({ message } as TResponse);
         }
-        next();
+        return next();
     };
 };

@@ -8,7 +8,3 @@ export type TRefreshToken = {
     userId: number;
     accessIp: string;
 };
-export type TAuthResponse = {
-    accessToken: string;
-    refreshToken: string;
-};

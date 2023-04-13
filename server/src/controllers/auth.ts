@@ -22,7 +22,7 @@ class AuthControllerImpl implements AuthController {
 
         try {
             const serviceResponse = await authService.refreshJwtToken(refreshToken, req.ip);
-            res.status(200).json(serviceResponse);
+            return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
             if (error instanceof NoDataError || error instanceof RefreshTokenError) {
@@ -30,7 +30,7 @@ class AuthControllerImpl implements AuthController {
                 return res.status(401).json({ message } as TResponse);
             }
             log.err(stack ?? message);
-            res.status(500).json({ message } as TResponse);
+            return res.status(500).json({ message } as TResponse);
         }
     };
 
