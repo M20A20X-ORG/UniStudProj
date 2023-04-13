@@ -1,6 +1,6 @@
 import { Schema } from 'ajv';
 import { RequestHandler } from 'express';
-import { TResponseJson } from '@type/schemas/response';
+import { TResponse } from '@type/schemas/response';
 
 import { NoSchemaError } from '@exceptions/NoSchemaError';
 import { SchemaValidationError } from '@exceptions/SchemaValidationError';
@@ -17,7 +17,7 @@ export const validateSchema = (schema: Schema): RequestHandler => {
         } else if (validate.errors) {
             const message = new SchemaValidationError(validate.errors.toString()).message;
             log.err(message);
-            res.status(404).send({ message } as TResponseJson);
+            return res.status(404).send({ message } as TResponse);
         }
     };
 };
