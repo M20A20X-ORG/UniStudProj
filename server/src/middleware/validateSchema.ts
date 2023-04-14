@@ -8,14 +8,15 @@ import { SchemaValidationError } from '@exceptions/SchemaValidationError';
 import { log } from '@configs/logger';
 import { ajv } from '@configs/schemas';
 
-export const validateSchema = (schema: Schema): RequestHandler => {
+export const requireSchemaValidator = (schema: Schema): RequestHandler => {
     const validate = ajv.compile(schema);
     if (!validate) throw new NoSchemaError(schema.toString());
     return (req, res, next) => {
         if (validate(req.body)) {
             return next();
         } else if (validate.errors) {
-            const message = new SchemaValidationError(validate.errors.toString()).message;
+            const [error] = validate.errors;
+            const message = new SchemaValidationError(error.message ?? '').message;
             log.err(message);
             return res.status(404).send({ message } as TResponse);
         }

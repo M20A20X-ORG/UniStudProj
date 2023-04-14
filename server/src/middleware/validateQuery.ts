@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import { responseBadQuery } from '@utils/responseBadQuery';
 
-export const requireValidateQuery = (...params: string[]): RequestHandler => {
+export const requireQueryValidator = (...params: string[]): RequestHandler => {
     return (req, res, next) => {
         if (!Object.keys(req.query).every((param) => params.includes(param))) {
             return responseBadQuery(
