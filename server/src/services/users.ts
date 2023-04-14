@@ -59,12 +59,10 @@ class UsersServiceImpl implements UsersService {
         const [[dbUser]] = dbUserResponse;
         if (!dbUser) throw new NoDataError(`No user found, identifier: '${userIdentifier}'`);
 
-        return new Promise<TPayloadResponse<TUser>>((resolve) =>
-            resolve({
-                message: `Successfully got user, identifier: '${userIdentifier}'`,
-                payload: dbUser
-            })
-        );
+        return {
+            message: `Successfully got user, identifier: '${userIdentifier}'`,
+            payload: dbUser
+        };
     };
 }
 

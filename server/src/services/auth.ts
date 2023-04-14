@@ -68,8 +68,6 @@ class AuthServiceImpl implements AuthService {
         userCredentials: TUserLogin,
         accessIp: string
     ): Promise<TLoginResponse> => {
-        log.debug(`Logging user: ${JSON.stringify(userCredentials)}`);
-
         const { username, password } = userCredentials;
         const sql = {
             selectUserData: `SELECT u.user_id  AS userId,
@@ -102,14 +100,12 @@ class AuthServiceImpl implements AuthService {
             expireDate
         ]);
 
-        return new Promise((res) =>
-            res({
-                message: `Successfully logged in user, username: ${username}`,
-                payload: user,
-                accessToken,
-                refreshToken
-            })
-        );
+        return {
+            message: `Successfully logged in user, username: ${username}`,
+            payload: user,
+            accessToken,
+            refreshToken
+        };
     };
 }
 
