@@ -7,7 +7,7 @@ CREATE TABLE `tbl_users`
     `role_id`  INT          NOT NULL,
     `name`     VARCHAR(30)  NOT NULL,
     `email`    VARCHAR(30)  NOT NULL,
-    `password` VARCHAR(30)  NOT NULL,
+    `password` VARCHAR(60)  NOT NULL,
     `username` VARCHAR(30)  NOT NULL,
     `about`    VARCHAR(200) NULL,
     `group`    VARCHAR(30)  NOT NULL,

@@ -10,13 +10,32 @@ export const editSchema: TEditSchema = {
         user: {
             type: 'object',
             properties: {
-                userId: { type: 'number' },
-                name: { type: 'string', nullable: true },
-                email: { type: 'string', nullable: true },
-                username: { type: 'string', nullable: true },
-                password: { type: 'string', nullable: true },
-                about: { type: 'string', nullable: true },
-                group: { type: 'string', nullable: true }
+                userId: { type: 'number', minimum: 0 },
+                name: { type: 'string', nullable: true, format: 'fullname', maxLength: 30 },
+                email: { type: 'string', nullable: true, format: 'email', maxLength: 30 },
+                username: {
+                    type: 'string',
+                    nullable: true,
+                    format: 'username',
+                    minLength: 6,
+                    maxLength: 30
+                },
+                password: {
+                    type: 'string',
+                    nullable: true,
+                    format: 'password',
+                    minLength: 6,
+                    maxLength: 60
+                },
+                passwordConfirm: {
+                    type: 'string',
+                    nullable: true,
+                    format: 'password',
+                    minLength: 6,
+                    maxLength: 60
+                },
+                about: { type: 'string', nullable: true, maxLength: 200 },
+                group: { type: 'string', nullable: true, maxLength: 30 }
             },
             required: ['userId'],
             additionalProperties: false
