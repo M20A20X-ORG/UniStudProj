@@ -1,15 +1,24 @@
-import { TPayloadResponse, TResponse } from '@type/schemas/response';
-import { TUser, TUserPartial } from '@type/schemas/user';
+import { QueryError } from 'mysql2';
 
+import { TPayloadResponse, TResponse } from '@type/schemas/response';
+import { TUserPartial, TUserPublic, TUserRegistration } from '@type/schemas/user';
+
+import { DEFAULT_ACCESS_ROLE_ID } from '@configs/auth';
+
+import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
+
+import { concat } from '@utils/concat';
+import { hashPassword } from '@utils/hashPassword';
 
 import { sqlPool } from '@configs/sqlPool';
 
 interface UsersService {
-    getUser: (userIdentifier: number | string) => Promise<TPayloadResponse<TUser>>;
-    registerUser?: (userData: TUser) => Promise<TResponse>;
-    editUser?: (userData: TUserPartial) => Promise<TPayloadResponse<TUser>>;
+    getUser: (userIdentifier: number | string) => Promise<TPayloadResponse<TUserPublic>>;
+    registerUser: (userData: TUserRegistration) => Promise<TResponse>;
+    editUser: (userData: TUserPartial) => Promise<TPayloadResponse<TUserPublic>>;
     deleteUser: (userId: number) => Promise<TResponse>;
 }
 
@@ -37,10 +46,16 @@ class UsersServiceImpl implements UsersService {
         );
     };
 
-    public getUser = async (userIdentifier: number | string): Promise<TPayloadResponse<TUser>> => {
+    public getUser = async (
+        userIdentifier: number | string
+    ): Promise<TPayloadResponse<TUserPublic>> => {
         const sql = `SELECT u.user_id AS userId,
                         ur.name   AS role,
-                        u.*
+                        u.email,
+                        u.username,
+                        u.name,
+                        u.about,
+                        u.group
                  FROM (SELECT user_id,
                               role_id,
                               name,
@@ -48,7 +63,7 @@ class UsersServiceImpl implements UsersService {
                               password,
                               username,
                               about,
-                              'group'
+                              \`group\`
                        FROM tbl_users
                        WHERE ${
                            typeof userIdentifier === 'string' ? 'username' : 'user_id'
@@ -59,9 +74,67 @@ class UsersServiceImpl implements UsersService {
         const [[dbUser]] = dbUserResponse;
         if (!dbUser) throw new NoDataError(`No user found, identifier: '${userIdentifier}'`);
 
+        const payload = dbUser as TUserPublic;
         return {
             message: `Successfully got user, identifier: '${userIdentifier}'`,
-            payload: dbUser
+            payload
+        };
+    };
+
+    public registerUser = async (userData: TUserRegistration): Promise<TResponse> => {
+        const { email, username, password, passwordConfirm, name, group, about } = userData;
+
+        const sql = `INSERT INTO tbl_users(role_id, name, email, password, username, about, \`group\`)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+        if (password !== passwordConfirm) throw new DataAddingError("Passwords don't match");
+
+        const passwordHash = hashPassword(password);
+
+        try {
+            await sqlPool.query(sql, [
+                DEFAULT_ACCESS_ROLE_ID,
+                name.trim(),
+                email.trim(),
+                passwordHash,
+                username.trim(),
+                about ? about.trim() : null,
+                group.trim()
+            ]);
+        } catch (error: unknown) {
+            const { code } = error as QueryError;
+            if (code === 'ER_DUP_ENTRY')
+                throw new DataAddingError(`User '${username}' already registered!`);
+            else throw error;
+        }
+
+        return {
+            message: `Successfully registered new user, email: ${userData.username}`
+        } as TResponse;
+    };
+
+    public editUser = async (userData: TUserPartial): Promise<TPayloadResponse<TUserPublic>> => {
+        const { userId, email, username, password, passwordConfirm, name, group, about } = userData;
+
+        if (password !== passwordConfirm) throw new DataModificationError("Passwords don't match");
+
+        const sql = `UPDATE tbl_users
+                 SET ${concat([
+                     email ? "email = '" + email.trim() + "'" : '',
+                     username ? "username = '" + username.trim() + "'" : '',
+                     password ? "password = '" + hashPassword(password) + "'" : '',
+                     name ? "name = '" + name.trim() + "'" : '',
+                     group ? "`group` = '" + group.trim() + "'" : '',
+                     about ? "about = '" + about.trim() + "'" : ''
+                 ])}
+                 WHERE user_id = ?`;
+
+        await sqlPool.query(sql, [userId]);
+        const { payload } = await this.getUser(userId);
+
+        return {
+            message: '',
+            payload
         };
     };
 }
