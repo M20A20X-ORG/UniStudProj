@@ -7,7 +7,7 @@ import cors from 'cors';
 
 import { log } from '@configs/logger';
 import { appRouter } from '@routes/index';
-import { logRequest } from '@middleware/requestLogger';
+import { logRequest } from '@middleware/logRequest';
 
 dotenv.config();
 
