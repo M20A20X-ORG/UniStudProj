@@ -1,43 +1,53 @@
+import * as process from 'process';
 import { env } from 'process';
+import { v4 } from 'uuid';
 
-import { Request, Response } from 'express';
 import {
     Algorithm,
-    JwtPayload,
+    JsonWebTokenError,
     Secret,
     sign,
     SignOptions,
     verify,
     VerifyOptions
 } from 'jsonwebtoken';
-import { TUserTokenPayload } from '@type/schemas/user';
+import { TAuthPayload, TRefreshToken } from '@type/schemas/user';
 
-import { log } from '@configs/logger';
 import { InvalidAccessRolesError } from '@exceptions/InvalidAccessRolesError';
+import { AuthorizationError } from '@exceptions/AuthorizationError';
 
 interface Auth {
     readonly ACCESS_ROLE: { [key: string]: string };
-    encodeSession: (payload: TUserTokenPayload) => string;
-    validateToken: (req: Request, res: Response) => void;
-    authorizeAccess: (requiredRoles: string[], req: Request, res: Response) => void;
+    createJwtToken: (payload: TAuthPayload) => string;
+    validateJwtToken: (authorizationHeader: string) => Promise<TAuthPayload>;
+    authorizeAccess: (userData: TAuthPayload, requiredRoles: string[]) => void;
 }
 
 class AuthImpl implements Auth {
-    private readonly ACCESS_ROLE_PREFIX = 'ROLE_';
+    private readonly _ACCESS_ROLE_PREFIX = 'ROLE_';
     public readonly ACCESS_ROLE = {
-        admin: this.ACCESS_ROLE_PREFIX + 'ADMINISTRATOR',
-        user: this.ACCESS_ROLE_PREFIX + 'USER'
+        admin: this._ACCESS_ROLE_PREFIX + 'ADMINISTRATOR',
+        user: this._ACCESS_ROLE_PREFIX + 'USER'
     };
 
     constructor() {
         Object.keys(this.ACCESS_ROLE).every((key) => {
             const roleKey = key as keyof typeof this.ACCESS_ROLE;
-            if (!this.ACCESS_ROLE[roleKey].startsWith(this.ACCESS_ROLE_PREFIX))
+            if (!this.ACCESS_ROLE[roleKey].startsWith(this._ACCESS_ROLE_PREFIX))
                 throw new InvalidAccessRolesError(this.ACCESS_ROLE[roleKey]);
         });
     }
 
-    public encodeSession = (payload: TUserTokenPayload): string => {
+    public createRefreshToken = (): Pick<TRefreshToken, 'token' | 'expireDate'> => {
+        const jwtRefreshExpireTime = parseInt(process.env.JWT_REFRESH_EXPIRE_TIME as string);
+        const expireDate = new Date(new Date().getTime() + 1000 * jwtRefreshExpireTime);
+        return {
+            token: v4(),
+            expireDate
+        };
+    };
+
+    public createJwtToken = (payload: TAuthPayload): string => {
         const secret = env.JWT_SECRET as Secret;
         const signOptions: SignOptions = {
             expiresIn: env.JWT_EXPIRE_TIME as string,
@@ -46,32 +56,26 @@ class AuthImpl implements Auth {
         return sign(payload, secret, signOptions);
     };
 
-    public validateToken = (req: Request, res: Response): void => {
-        const jwt = req.headers.authorization as string;
+    public validateJwtToken = (authorizationHeader: string): Promise<TAuthPayload> => {
         const secret = env.JWT_SECRET as Secret;
         const verifyOptions: VerifyOptions = {
             algorithms: [env.JWT_ALGORITHM as Algorithm]
         };
 
-        if (!jwt) {
-            log.warn('No Authorization header!');
-            res.sendStatus(401);
-        }
+        if (!authorizationHeader) throw new JsonWebTokenError('No Authorization header!');
+        const token = authorizationHeader.slice('Bearer '.length);
 
-        const token = jwt.slice('Bearer '.length);
-        verify(token, secret, verifyOptions, (err, user) => {
-            if (err) {
-                log.warn(err.message);
-                res.sendStatus(403);
-            }
-            req.user = user as JwtPayload;
-        });
+        return new Promise((resolve, reject) =>
+            verify(token, secret, verifyOptions, (err, user) =>
+                err ? reject(err) : resolve(user as TAuthPayload)
+            )
+        );
     };
 
-    public authorizeAccess = (requiredRoles: string[], req: Request, res: Response): void => {
-        const { role: accessRole } = req.user as JwtPayload;
-        if (!accessRole) res.sendStatus(401);
-        else if (requiredRoles.find(accessRole)) res.sendStatus(403);
+    public authorizeAccess = (userData: TAuthPayload, requiredRoles: string[]): void => {
+        const accessRole = userData.role;
+        if (!accessRole) throw new AuthorizationError('No role!');
+        else if (requiredRoles.includes(accessRole)) throw new AuthorizationError(accessRole);
     };
 }
 

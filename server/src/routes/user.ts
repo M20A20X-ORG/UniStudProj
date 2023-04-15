@@ -6,6 +6,7 @@ import { usersController } from '@controllers/users';
 
 const router = createChildRouter();
 
+router.get('/token', usersController.getRefreshJwtToken);
 router.post('/register', (req, res) => res.json('register'));
 router.post(
     '/login',
