@@ -18,6 +18,7 @@ import { AuthorizationError } from '@exceptions/AuthorizationError';
 
 interface Auth {
     readonly ACCESS_ROLE: { [key: string]: string };
+    readonly DEFAULT_ACCESS_ROLE_ID: number;
     createJwtToken: (payload: TAuthPayload) => string;
     validateJwtToken: (authorizationHeader: string) => Promise<TAuthPayload>;
     authorizeAccess: (userData: TAuthPayload, requiredRoles: string[]) => void;
@@ -29,6 +30,7 @@ class AuthImpl implements Auth {
         admin: this._ACCESS_ROLE_PREFIX + 'ADMINISTRATOR',
         user: this._ACCESS_ROLE_PREFIX + 'USER'
     };
+    public readonly DEFAULT_ACCESS_ROLE_ID = 2;
 
     constructor() {
         Object.keys(this.ACCESS_ROLE).every((key) => {
@@ -80,4 +82,4 @@ class AuthImpl implements Auth {
 }
 
 export const auth = new AuthImpl();
-export const { ACCESS_ROLE } = auth;
+export const { ACCESS_ROLE, DEFAULT_ACCESS_ROLE_ID } = auth;

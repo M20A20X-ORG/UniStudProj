@@ -25,5 +25,6 @@ export type TUser = {
 
 export type TUserJson<T> = { user: T };
 
-export type TUserRegistration = Omit<TUser, 'userId' | 'role'>;
+export type TUserRegistration = Omit<TUser, 'userId' | 'role'> & { passwordConfirm: string };
 export type TUserPartial = Pick<TUser, 'userId'> & Partial<TUserRegistration>;
+export type TUserPublic = Omit<TUser, 'password'>;
