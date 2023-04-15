@@ -1,7 +1,7 @@
 import { compareSync } from 'bcrypt';
 
-import { TAuthPayload, TAuthResponse, TRefreshToken, TUserLogin } from '@type/schemas/auth';
-import { TLoginResponse, TPayloadResponse } from '@type/schemas/response';
+import { TAuthPayload, TRefreshToken, TUserLogin } from '@type/schemas/auth';
+import { TAuthResponse, TLoginResponse, TPayloadResponse } from '@type/schemas/response';
 import { TUser } from '@type/schemas/user';
 
 import { NoDataError } from '@exceptions/NoDataError';
