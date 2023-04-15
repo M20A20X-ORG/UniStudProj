@@ -1,7 +1,7 @@
 import { JSONSchemaType } from 'ajv';
-import { TUser } from '@type/schemas/user';
+import { TUserJson, TUserRegistration } from '@type/schemas/user';
 
-type TRegistrationSchema = JSONSchemaType<{ user: TUser }>;
+type TRegistrationSchema = JSONSchemaType<TUserJson<TUserRegistration>>;
 
 export const registrationSchema: TRegistrationSchema = {
     $id: 'UserRegistrationSchema',
