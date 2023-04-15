@@ -7,7 +7,7 @@ import { AuthorizationError } from '@exceptions/AuthorizationError';
 import { log } from '@configs/logger';
 import { auth } from '@configs/auth';
 
-export const requireAuth = (requiredRoles: string[]): RequestHandler => {
+export const requireAuth = (...requiredRoles: string[]): RequestHandler => {
     return async (req, res, next) => {
         const { authorization } = req.headers || {};
         if (typeof authorization !== 'string')
