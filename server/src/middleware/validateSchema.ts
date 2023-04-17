@@ -23,7 +23,7 @@ export const requireSchemaValidator = (schema: string): RequestHandler => {
 
             const message = new SchemaValidationError(errMessage).message;
             log.err(message);
-            return res.status(404).send({ message } as TResponse);
+            return res.status(400).send({ message } as TResponse);
         }
     };
 };
