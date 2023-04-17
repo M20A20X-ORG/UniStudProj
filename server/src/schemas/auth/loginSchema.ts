@@ -5,7 +5,7 @@ import { TUserJson } from '@type/schemas/user';
 type TLoginSchema = JSONSchemaType<TUserJson<TUserLogin>>;
 
 export const loginSchema: TLoginSchema = {
-    $id: 'UserLoginSchema',
+    $id: 'http://example.com/schemas/auth/login',
     type: 'object',
     properties: {
         user: {

@@ -4,7 +4,7 @@ import { TUserJson, TUserRegistration } from '@type/schemas/user';
 type TRegistrationSchema = JSONSchemaType<TUserJson<TUserRegistration>>;
 
 export const registrationSchema: TRegistrationSchema = {
-    $id: 'UserRegistrationSchema',
+    $id: 'http://example.com/schemas/user/registration',
     type: 'object',
     properties: {
         user: {

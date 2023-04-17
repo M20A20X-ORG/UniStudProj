@@ -1,5 +1,6 @@
-import { loginSchema } from '@schemas/auth/loginSchema';
+import { loginSchema } from './loginSchema';
+import { TSchemas } from '@type/schema';
 
-export const AUTH_SCHEMA = {
+export const AUTH_SCHEMA: TSchemas = {
     loginSchema
 };

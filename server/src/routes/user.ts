@@ -1,34 +1,31 @@
-import { createChildRouter } from '@utils/router';
+import { usersController } from '@controllers/users';
 
 import { ACCESS_ROLE } from '@configs/auth';
-import { USER_SCHEMA } from '@schemas/users';
+import { USER_QUERY } from '@schemas/users';
 
+import { createChildRouter } from '@utils/router';
 import { requireAuth } from '@middleware/auth';
-import { requireQueryValidator } from '@middleware/validateQuery';
 import { requireSchemaValidator } from '@middleware/validateSchema';
-
-import { usersController } from '@controllers/users';
 
 const router = createChildRouter();
 const { admin, user } = ACCESS_ROLE;
-const { registrationSchema, editSchema } = USER_SCHEMA;
 
 router.post(
     '/register',
-    requireSchemaValidator(registrationSchema),
+    requireSchemaValidator('http://example.com/schemas/user/registration'),
     usersController.postRegisterUser
 );
-router.get('/get', requireQueryValidator('user'), usersController.getGetUser);
+router.get('/get', USER_QUERY.userId, usersController.getGetUser);
 router.put(
     '/edit',
     requireAuth(admin, user),
-    requireSchemaValidator(editSchema),
+    requireSchemaValidator('http://example.com/schemas/user/edit'),
     usersController.putEditUser
 );
 router.delete(
     '/delete',
     requireAuth(admin, user),
-    requireQueryValidator('userId'),
+    USER_QUERY.userId,
     usersController.deleteDeleteUser
 );
 

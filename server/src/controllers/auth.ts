@@ -25,12 +25,16 @@ class AuthControllerImpl implements AuthController {
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof NoDataError || error instanceof RefreshTokenError) {
+            if (error instanceof NoDataError) {
+                log.warn(message);
+                return res.status(404).json({ message } as TResponse);
+            }
+            if (error instanceof RefreshTokenError) {
                 log.warn(message);
                 return res.status(401).json({ message } as TResponse);
             }
             log.err(stack ?? message);
-            return res.status(500).json({ message } as TResponse);
+            return res.status(500);
         }
     };
 
@@ -43,10 +47,10 @@ class AuthControllerImpl implements AuthController {
             const { message, stack } = error as Error;
             if (error instanceof NoDataError) {
                 log.warn(message);
-                return res.status(401).json({ message } as TResponse);
+                return res.status(404).json({ message } as TResponse);
             }
             log.err(stack ?? message);
-            return res.status(500).json({ message } as TResponse);
+            return res.status(500);
         }
     };
 }
