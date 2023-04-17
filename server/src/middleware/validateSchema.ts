@@ -1,4 +1,3 @@
-import { Schema } from 'ajv';
 import { RequestHandler } from 'express';
 import { TResponse } from '@type/schemas/response';
 
@@ -8,8 +7,8 @@ import { SchemaValidationError } from '@exceptions/SchemaValidationError';
 import { log } from '@configs/logger';
 import { ajv } from '@configs/schemas';
 
-export const requireSchemaValidator = (schema: Schema): RequestHandler => {
-    const validate = ajv.compile(schema);
+export const requireSchemaValidator = (schema: string): RequestHandler => {
+    const validate = ajv.getSchema(schema);
     if (!validate) throw new NoSchemaError(schema.toString());
     return (req, res, next) => {
         if (validate(req.body)) {
