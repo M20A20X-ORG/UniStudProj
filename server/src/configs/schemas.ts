@@ -1,34 +1,28 @@
 import Ajv from 'ajv';
-import { TSchemaPatterns, TSchemasGeneral } from '@type/schema';
-import { SCHEMAS } from '@schemas/index';
+import { TSchemaFormatGeneral, TSchemaGeneral } from '@type/schema';
+import { SCHEMA_FORMATS, SCHEMAS } from '@schemas/index';
 
 class AjvConfig {
     public readonly ajv: Ajv;
 
-    private _SCHEMA_PATTERNS: TSchemaPatterns = {
-        fullname: /^([A-Z][a-z]+\s?){3,}$/i,
-        username: /^[a-z\d]{5,}$/,
-        password: /^[\w\W]{6,}$/,
-        email: /^[a-z\d]+@[a-z\d]+.[a-z\d]+$/
-    };
-
-    constructor(schemas: TSchemasGeneral) {
+    constructor(schemas: TSchemaGeneral, patterns: TSchemaFormatGeneral) {
         this.ajv = new Ajv({ allErrors: true });
-        this._addSchemaPatterns();
+        this._addSchemaPatterns(patterns);
         this._addSchemas(schemas);
     }
 
-    private _addSchemaPatterns = () => {
-        Object.keys(this._SCHEMA_PATTERNS).forEach((key) =>
-            this.ajv.addFormat(key, this._SCHEMA_PATTERNS[key])
-        );
+    private _addSchemaPatterns = (patternsGeneral: TSchemaFormatGeneral) => {
+        Object.keys(patternsGeneral).forEach((key) => {
+            const patternObj = patternsGeneral[key];
+            Object.keys(patternObj).forEach((key) => this.ajv.addFormat(key, patternObj[key]));
+        });
     };
-    private _addSchemas = (schemaGeneral: TSchemasGeneral) => {
+    private _addSchemas = (schemaGeneral: TSchemaGeneral) => {
         Object.keys(schemaGeneral).forEach((schemaKey) => {
-            const schema = schemaGeneral[schemaKey];
-            Object.keys(schema).forEach((key) => this.ajv.addSchema(schema[key]));
+            const schemaObj = schemaGeneral[schemaKey];
+            Object.keys(schemaObj).forEach((key) => this.ajv.addSchema(schemaObj[key]));
         });
     };
 }
 
-export const { ajv } = new AjvConfig(SCHEMAS);
+export const { ajv } = new AjvConfig(SCHEMAS, SCHEMA_FORMATS);
