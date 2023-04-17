@@ -10,23 +10,23 @@ export const registrationSchema: TRegistrationSchema = {
         user: {
             type: 'object',
             properties: {
-                name: { type: 'string', format: 'fullname', maxLength: 30 },
-                email: { type: 'string', format: 'email', maxLength: 30 },
+                name: { type: 'string', format: 'userFullName', maxLength: 30 },
+                email: { type: 'string', format: 'userEmail', maxLength: 30 },
                 username: {
                     type: 'string',
-                    format: 'username',
+                    format: 'userUsername',
                     minLength: 6,
                     maxLength: 30
                 },
                 password: {
                     type: 'string',
-                    format: 'password',
+                    format: 'userPassword',
                     minLength: 6,
                     maxLength: 60
                 },
                 passwordConfirm: {
                     type: 'string',
-                    format: 'password',
+                    format: 'userPassword',
                     minLength: 6,
                     maxLength: 60
                 },

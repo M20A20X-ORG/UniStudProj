@@ -1,9 +1,13 @@
 import { AUTH_SCHEMA } from './auth';
-import { USER_SCHEMA } from './users';
+import { USER_FORMAT, USER_SCHEMA } from './users';
 
-import { TSchemasGeneral } from '@type/schema';
+import { TSchemaFormatGeneral, TSchemaGeneral } from '@type/schema';
 
-export const SCHEMAS: TSchemasGeneral = {
+export const SCHEMAS: TSchemaGeneral = {
     AUTH_SCHEMA,
     USER_SCHEMA
+};
+
+export const SCHEMA_FORMATS: TSchemaFormatGeneral = {
+    USER_FORMAT
 };
