@@ -4,7 +4,7 @@ import { TUserJson, TUserPartial } from '@type/schemas/user';
 type TEditSchema = JSONSchemaType<TUserJson<TUserPartial>>;
 
 export const editSchema: TEditSchema = {
-    $id: 'UserEditSchema',
+    $id: 'http://example.com/schemas/user/edit',
     type: 'object',
     properties: {
         user: {

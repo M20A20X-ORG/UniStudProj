@@ -1,5 +1,6 @@
 import { compareSync } from 'bcrypt';
 
+import { QueryError } from 'mysql2/index';
 import { TAuthPayload, TRefreshToken, TUserLogin } from '@type/schemas/auth';
 import { TAuthResponse, TLoginResponse, TPayloadResponse } from '@type/schemas/response';
 import { TUser } from '@type/schemas/user';
@@ -76,8 +77,7 @@ class AuthServiceImpl implements AuthService {
                               u.*
                        FROM (SELECT *
                              FROM tbl_users
-                             WHERE username = ?
-                               AND password = ?) AS u
+                             WHERE username = ?) AS u
                                 JOIN tbl_user_roles ur ON ur.role_id = u.role_id`,
             insertRefreshToken: `INSERT INTO tbl_user_refresh_tokens(token, user_id, access_ip, expire_date)
                            VALUES (?, ?, ?, ?)`
@@ -93,12 +93,20 @@ class AuthServiceImpl implements AuthService {
 
         const accessToken = auth.createJwtToken({ username, role: user.role });
         const { token: refreshToken, expireDate } = auth.createRefreshToken();
-        await sqlPool.query(sql.insertRefreshToken, [
-            refreshToken,
-            user.userId,
-            accessIp,
-            expireDate
-        ]);
+
+        try {
+            await sqlPool.query(sql.insertRefreshToken, [
+                refreshToken,
+                user.userId,
+                accessIp,
+                expireDate
+            ]);
+        } catch (error: unknown) {
+            const { code } = error as QueryError;
+            if (code === 'ER_DUP_ENTRY')
+                throw new RefreshTokenError(`User '${username}' already logged in!`);
+            else throw error;
+        }
 
         return {
             message: `Successfully logged in user, username: ${username}`,
