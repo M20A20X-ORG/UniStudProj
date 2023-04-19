@@ -17,12 +17,11 @@ interface ProjectsController {
 
 class ProjectsControllerImpl implements ProjectsController {
     public deleteDeleteProject: RequestHandler = async (req, res) => {
-        const { projectId: projectIdParam } = req.query;
-        const projectId = parseInt(projectIdParam as string);
+        const projectId = parseInt(req.query.projectId as string);
 
         try {
             const serviceResponse = await projectsService.deleteProject(projectId);
-            return res.status(204).json(serviceResponse);
+            return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
             if (error instanceof DataDeletionError) {
@@ -38,8 +37,8 @@ class ProjectsControllerImpl implements ProjectsController {
         const { project } = req.body as TProjectJson<TProjectCreation>;
 
         try {
-            const serviceResponse = await projectsService.addProject(project);
-            return res.status(204).json(serviceResponse);
+            const serviceResponse = await projectsService.createProject(project);
+            return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
             if (error instanceof DataAddingError) {
