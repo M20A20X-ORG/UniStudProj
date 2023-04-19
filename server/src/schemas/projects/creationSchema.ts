@@ -10,7 +10,7 @@ export const creationSchema: TCreationSchema = {
         project: {
             type: 'object',
             properties: {
-                name: { type: 'string' },
+                name: { type: 'string', format: 'projectName' },
                 description: { type: 'string', nullable: true },
                 dateStart: { type: 'string' },
                 dateEnd: { type: 'string' },

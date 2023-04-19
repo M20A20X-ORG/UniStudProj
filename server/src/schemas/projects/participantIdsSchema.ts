@@ -1,8 +1,8 @@
 import { JSONSchemaType } from 'ajv';
 import { TProjectParticipantId } from '@type/schemas/projects/project';
 
-type TProjectParticipantIds = JSONSchemaType<TProjectParticipantId>;
-export const participantIdsSchema: TProjectParticipantIds = {
+type projectParticipantId = JSONSchemaType<TProjectParticipantId>;
+export const participantIdsSchema: projectParticipantId = {
     $id: 'http://example.com/schemas/project/participantIds',
     type: 'object',
     properties: {

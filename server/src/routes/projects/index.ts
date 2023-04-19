@@ -17,7 +17,6 @@ router.post(
     requireSchemaValidator('http://example.com/schemas/project/create'),
     projectsController.postCreateProject
 );
-router.put('/edit', (req, res) => res.json('edit'));
 router.delete(
     '/delete',
     requireAuth(user, admin),

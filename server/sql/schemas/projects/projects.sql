@@ -6,6 +6,7 @@ CREATE TABLE `tbl_projects`
     `project_id`          INT AUTO_INCREMENT,
     `name`                VARCHAR(30)  NOT NULL,
     `participants_amount` INT          NOT NULL,
+    `tags_amount`         INT          NOT NULL,
     `description`         VARCHAR(200) NULL,
     `date_start`          DATE         NULL,
     `date_end`            DATE         NULL,
