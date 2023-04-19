@@ -11,26 +11,26 @@ export const editSchema: TEditSchema = {
             type: 'object',
             properties: {
                 userId: { type: 'number', minimum: 0 },
-                name: { type: 'string', nullable: true, format: 'fullname', maxLength: 30 },
-                email: { type: 'string', nullable: true, format: 'email', maxLength: 30 },
+                name: { type: 'string', nullable: true, format: 'userFullName', maxLength: 30 },
+                email: { type: 'string', nullable: true, format: 'userEmail', maxLength: 30 },
                 username: {
                     type: 'string',
                     nullable: true,
-                    format: 'username',
+                    format: 'userUsername',
                     minLength: 6,
                     maxLength: 30
                 },
                 password: {
                     type: 'string',
                     nullable: true,
-                    format: 'password',
+                    format: 'userPassword',
                     minLength: 6,
                     maxLength: 60
                 },
                 passwordConfirm: {
                     type: 'string',
                     nullable: true,
-                    format: 'password',
+                    format: 'userPassword',
                     minLength: 6,
                     maxLength: 60
                 },
