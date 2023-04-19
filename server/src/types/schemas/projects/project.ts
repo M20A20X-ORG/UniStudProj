@@ -1,12 +1,12 @@
 export type TProjectParticipant = {
     userId: number;
-    username?: string;
+    username: string;
     projectRoleId: number;
-    projectRole?: string;
+    projectRole: string;
 };
 export type TProjectTag = {
     tagId: number;
-    tag?: string;
+    tag: string;
 };
 
 export type TProject = {

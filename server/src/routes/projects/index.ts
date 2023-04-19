@@ -5,22 +5,35 @@ import { ACCESS_ROLE } from '@configs/auth';
 import { PROJECT_QUERY } from '@schemas/projects';
 
 import { createChildRouter } from '@utils/router';
+
 import { requireSchemaValidator } from '@middleware/validateSchema';
 import { requireAuth } from '@middleware/auth';
+import { requireQueryValidator } from '@middleware/validateQuery';
 
 const router = createChildRouter();
 const { user, admin } = ACCESS_ROLE;
 
+router.get(
+    '/get',
+    ...requireQueryValidator(PROJECT_QUERY.projectIds),
+    projectsController.getGetProject
+);
 router.post(
     '/create',
     requireAuth(user, admin),
     requireSchemaValidator('http://example.com/schemas/project/create'),
     projectsController.postCreateProject
 );
+router.put(
+    '/edit',
+    requireAuth(user, admin),
+    requireSchemaValidator('http://example.com/schemas/project/edit'),
+    projectsController.putEditProject
+);
 router.delete(
     '/delete',
     requireAuth(user, admin),
-    PROJECT_QUERY.projectId,
+    ...requireQueryValidator(PROJECT_QUERY.projectId),
     projectsController.deleteDeleteProject
 );
 
