@@ -18,7 +18,12 @@ export const PROJECT_FORMATS: TSchemaFormats = {
 } as const;
 
 export const PROJECT_QUERY = {
-    projectId: check('projectId', new RequestParamsError('projectId must be >= 1').message).isInt({
-        min: 1
-    })
+    projectId: check('projectId')
+        .isInt()
+        .withMessage(new RequestParamsError('projectId must be a number >= 1').message),
+    projectIds: check('projectIds')
+        .optional()
+        .isArray()
+        .custom((projectIds: any[]) => projectIds.every((elem) => !isNaN(elem) && elem >= 1))
+        .withMessage(new RequestParamsError('projectIds must be an array of numbers >= 1').message)
 } as const;
