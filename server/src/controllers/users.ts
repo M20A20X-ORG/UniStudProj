@@ -37,11 +37,14 @@ class UsersControllerImpl implements UsersController {
     };
 
     public getGetUser: RequestHandler = async (req, res) => {
-        const userIdentifier = req.query.user as string;
-        const userId = parseInt(userIdentifier);
+        const userIdentifiers = req.query.userIdentifiers as string[];
+        const userIds = userIdentifiers.map((id) => parseInt(id));
+        const isIdsCorrect = userIds.every((id) => !isNaN(id));
 
         try {
-            const serviceResponse = await usersService.getUser(userId || userIdentifier);
+            const serviceResponse = await usersService.getUsers(
+                ...(isIdsCorrect ? userIds : userIdentifiers)
+            );
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
