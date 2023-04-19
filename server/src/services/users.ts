@@ -16,7 +16,9 @@ import { hashPassword } from '@utils/hashPassword';
 import { sqlPool } from '@configs/sqlPool';
 
 interface UsersService {
-    getUser: (userIdentifier: number | string) => Promise<TPayloadResponse<TUserPublic>>;
+    getUsers: (
+        ...userIdentifiers: Array<number | string>
+    ) => Promise<TPayloadResponse<TUserPublic[]>>;
     registerUser: (userData: TUserRegistration) => Promise<TResponse>;
     editUser: (userData: TUserPartial) => Promise<TPayloadResponse<TUserPublic>>;
     deleteUser: (userId: number) => Promise<TResponse>;
@@ -46,9 +48,9 @@ class UsersServiceImpl implements UsersService {
         );
     };
 
-    public getUser = async (
-        userIdentifier: number | string
-    ): Promise<TPayloadResponse<TUserPublic>> => {
+    public getUsers = async (
+        ...userIdentifiers: Array<number | string>
+    ): Promise<TPayloadResponse<TUserPublic[]>> => {
         const sql = `SELECT u.user_id AS userId,
                         ur.name   AS role,
                         u.email,
@@ -66,17 +68,20 @@ class UsersServiceImpl implements UsersService {
                               \`group\`
                        FROM tbl_users
                        WHERE ${
-                           typeof userIdentifier === 'string' ? 'username' : 'user_id'
-                       } = ?) AS u
+                           typeof [userIdentifiers] === 'string' ? 'username' : 'user_id'
+                       } IN (${userIdentifiers.toString()})) AS u
                           JOIN tbl_user_roles ur ON ur.role_id = u.role_id`;
 
-        const dbUserResponse = await sqlPool.query(sql, userIdentifier);
-        const [[dbUser]] = dbUserResponse;
-        if (!dbUser) throw new NoDataError(`No user found, identifier: '${userIdentifier}'`);
+        const dbUsersResponse = await sqlPool.query(sql, userIdentifiers);
+        const [dbUsers] = dbUsersResponse as any[];
+        if (!dbUsers.length)
+            throw new NoDataError(
+                `No users found, identifiers: '${JSON.stringify(userIdentifiers)}'`
+            );
 
-        const payload = dbUser as TUserPublic;
+        const payload = dbUsers as TUserPublic[];
         return {
-            message: `Successfully got user, identifier: '${userIdentifier}'`,
+            message: `Successfully got users`,
             payload
         };
     };
@@ -130,11 +135,13 @@ class UsersServiceImpl implements UsersService {
                  WHERE user_id = ?`;
 
         await sqlPool.query(sql, [userId]);
-        const { payload } = await this.getUser(userId);
+        const {
+            payload: [user]
+        } = await this.getUsers(userId);
 
         return {
             message: '',
-            payload
+            payload: user
         };
     };
 }
