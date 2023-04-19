@@ -19,12 +19,11 @@ export const USER_FORMAT: TSchemaFormats = {
 } as const;
 
 export const USER_QUERY: TQueryValidators = {
-    userId: check(
-        'userIdentifier',
-        new RequestParamsError(
-            `userIdentifier must be number >= 1 or string with pattern ${USER_FORMAT.username}}`
-        ).message
-    )
-        .isInt({ min: 1 })
-        .isString()
+    userId: check('userIdentifiers')
+        .isArray()
+        .withMessage(
+            new RequestParamsError(
+                `userIdentifiers must be an array of numbers >= 1 or strings with pattern ${USER_FORMAT.userUsername}}`
+            ).message
+        )
 } as const;
