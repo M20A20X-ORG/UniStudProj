@@ -7,7 +7,7 @@ import {
     TProjectEdit,
     TProjectParticipant,
     TProjectParticipantId,
-    TProjectTag
+    TTag
 } from '@type/schemas/projects/project';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
@@ -196,7 +196,7 @@ class ProjectsServiceImpl implements ProjectsService {
         const [dbTags] = dbTagsResponse as any[];
         if (dbTags.length)
             projects.forEach((project) => {
-                const tags = dbTags as Array<TDependency<TProjectTag>>;
+                const tags = dbTags as Array<TDependency<TTag>>;
                 project.tags = tags
                     .filter((tag) => tag.projectId === project.projectId)
                     .map((tag) => {
