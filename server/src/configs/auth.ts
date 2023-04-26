@@ -11,10 +11,16 @@ import {
     verify,
     VerifyOptions
 } from 'jsonwebtoken';
-import { TAuthPayload, TRefreshToken } from '@type/schemas/auth';
+import { Request } from 'express';
+import { TAuthPayload, TPartialKey, TRefreshToken } from '@type/schemas/auth';
 
 import { InvalidAccessRolesError } from '@exceptions/InvalidAccessRolesError';
 import { AuthorizationError } from '@exceptions/AuthorizationError';
+import { AuthenticationError } from '@exceptions/AuthenticationError';
+
+import { AUTH_SQL } from '@static/sql/auth';
+import { TProjectId } from '@type/schemas/projects/project';
+import { sqlPool } from '@configs/sqlPool';
 
 interface Auth {
     readonly ACCESS_ROLE: { [key: string]: string };
@@ -25,12 +31,22 @@ interface Auth {
 }
 
 class AuthImpl implements Auth {
+    ///// Private /////
     private readonly _ACCESS_ROLE_PREFIX = 'ROLE_';
+    private _PROJECT_ACCESS_ROLE_PREFIX = 'ROLE_PROJECT_';
+
+    ///// Public /////
+    public readonly DEFAULT_ACCESS_ROLE_ID = 2;
     public readonly ACCESS_ROLE = {
         admin: this._ACCESS_ROLE_PREFIX + 'ADMINISTRATOR',
         user: this._ACCESS_ROLE_PREFIX + 'USER'
     };
-    public readonly DEFAULT_ACCESS_ROLE_ID = 2;
+    public PROJECT_ACCESS_ROLE = {
+        owner: this._PROJECT_ACCESS_ROLE_PREFIX + 'OWNER',
+        manager: this._PROJECT_ACCESS_ROLE_PREFIX + 'MANAGER',
+        mentor: this._PROJECT_ACCESS_ROLE_PREFIX + 'MENTOR',
+        developer: this._PROJECT_ACCESS_ROLE_PREFIX + 'DEVELOPER'
+    };
 
     constructor() {
         Object.keys(this.ACCESS_ROLE).every((key) => {
@@ -39,6 +55,8 @@ class AuthImpl implements Auth {
                 throw new InvalidAccessRolesError(this.ACCESS_ROLE[roleKey]);
         });
     }
+
+    ///// Public /////
 
     public createRefreshToken = (): Pick<TRefreshToken, 'token' | 'expireDate'> => {
         const jwtRefreshExpireTime = parseInt(process.env.JWT_REFRESH_EXPIRE_TIME as string);
@@ -79,7 +97,40 @@ class AuthImpl implements Auth {
         if (!accessRole) throw new AuthorizationError('No role!');
         else if (!requiredRoles.includes(accessRole)) throw new AuthorizationError(accessRole);
     };
+
+    public authorizeProjectAccess = async (
+        req: Request,
+        requiredProjectRoles: string[]
+    ): Promise<void> => {
+        const { user, body, query } = req || {};
+        const { userId } = user as TAuthPayload;
+
+        const projectIdStr = query?.projectId;
+        let projectId = undefined;
+
+        if (typeof projectIdStr === 'string') projectId = parseInt(projectIdStr);
+        if (!projectId || isNaN(projectId)) {
+            const errMessage = "'projectId' must be included in request body or query!";
+            if (!body) throw new AuthorizationError(errMessage);
+            else {
+                const pBody = body as TPartialKey<TProjectId>;
+                const projectIdKey = Object.keys(pBody).filter((key) => body[key]?.projectId)?.[0];
+                if (!projectIdKey) throw new AuthenticationError(errMessage);
+                projectId = body[projectIdKey]?.projectId;
+            }
+        }
+
+        const dbProjectRoleResponse = await sqlPool.query(AUTH_SQL.selectProjectRole, [
+            projectId,
+            userId
+        ]);
+        const [[dbProjectRole]] = dbProjectRoleResponse;
+        if (!dbProjectRole) throw new AuthenticationError('Specified project are not exists!');
+
+        const { projectRole } = dbProjectRole as { projectRole: string };
+        if (!requiredProjectRoles.includes(projectRole)) throw new AuthorizationError(projectRole);
+    };
 }
 
 export const auth = new AuthImpl();
-export const { ACCESS_ROLE, DEFAULT_ACCESS_ROLE_ID } = auth;
+export const { ACCESS_ROLE, PROJECT_ACCESS_ROLE, DEFAULT_ACCESS_ROLE_ID } = auth;
