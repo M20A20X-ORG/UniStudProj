@@ -1,23 +1,34 @@
 import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
-
+import { TDependency } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
-import { TProjectTask, TTaskCreation, TTaskPartial } from '@type/schemas/projects/tasks';
-
-import { TASK_SQL } from '@static/sql/task';
+import { TProjectTag } from '@type/schemas/projects/project';
+import { TProjectTask, TTaskCreation, TTaskEdit, TTaskId } from '@type/schemas/projects/tasks';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataDeletionError } from '@exceptions/DataDeletionError';
+import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
 
+import { TASK_SQL } from '@static/sql/task';
 import { sqlPool } from '@configs/sqlPool';
+import { updateDependent } from '@utils/updateDependent';
 
-const { deleteSql, createSql } = TASK_SQL;
+const { deleteSql, createSql, readSql, updateSql } = TASK_SQL;
+
+type TTasksRaw = Array<
+    TProjectTask & {
+        tempUserId: number;
+        tempUsername: string;
+        tempStatusId: number;
+        tempStatus: string;
+    }
+>;
 
 interface TasksService {
-    getTasks?: (...taskIds: number[]) => Promise<TPayloadResponse<TProjectTask[]>>;
+    getTasks: (...taskIds: number[]) => Promise<TPayloadResponse<TProjectTask[]>>;
     createTask: (taskData: TTaskCreation) => Promise<TResponse>;
-    createTaskStatus: (status: string) => Promise<TResponse>;
-    editTask?: (taskData: TTaskPartial) => Promise<TPayloadResponse<TProjectTask>>;
+    editTask: (taskData: TTaskEdit) => Promise<TPayloadResponse<TProjectTask[]>>;
     deleteTask: (projectId: number, taskId: number) => Promise<TResponse>;
 }
 
@@ -90,16 +101,39 @@ class TasksServiceImpl implements TasksService {
         }
     };
 
-    public createTaskStatus = async (status: string): Promise<TResponse> => {
-        try {
-            await sqlPool.query(createSql.insertTaskStatus, [status]);
-        } catch (error: unknown) {
-            const { code } = error as QueryError;
-            if (code === 'ER_DUP_ENTRY')
-                throw new DataAddingError(`Task '${status}' already exists!`);
-            throw error;
+    public getTasks = async (projectId: number): Promise<TPayloadResponse<TProjectTask[]>> => {
+        const { selectTasks, selectTags } = readSql;
+
+        const dbTasksResponse = await sqlPool.query(selectTasks, [projectId]);
+        const [dbTasks] = dbTasksResponse as any[];
+        if (!dbTasks.length) throw new NoDataError(`No project found, id: '${projectId}'`);
+        const tasksRaw = dbTasks as TTasksRaw;
+        const tasks: TProjectTask[] = tasksRaw.map((taskRaw) => {
+            const { tempUserId, tempUsername, tempStatusId, tempStatus, ...task } = taskRaw;
+            task.assignUser = { userId: tempUserId, username: tempUsername };
+            task.status = { statusId: tempStatusId, status: tempStatus };
+            return task;
+        });
+
+        const dbTagsResponse = await sqlPool.query(selectTags, [projectId]);
+        const [dbTags] = dbTagsResponse as any[];
+        if (dbTags.length) {
+            const tags = dbTags as Array<TDependency<TTaskId, TProjectTag>>;
+            tasks.forEach(
+                (task) =>
+                    (task.tags = tags
+                        .filter((tag) => tag.taskId === task.taskId)
+                        .map((tag) => {
+                            delete tag['taskId'];
+                            return tag;
+                        }))
+            );
         }
-        return { message: `Successfully added new task status: '${status}'` };
+
+        return {
+            message: `Successfully got tasks, project id: '${projectId}'`,
+            payload: tasks
+        };
     };
 
     public createTask = async (taskData: TTaskCreation): Promise<TResponse> => {
@@ -113,7 +147,7 @@ class TasksServiceImpl implements TasksService {
             const dbNewTaskIdResponse = await connection.query(createSql.selectNewTaskId);
             const [[dbNewTaskId]] = dbNewTaskIdResponse;
             if (!dbNewTaskId) throw new DataAddingError("Can't add new task!");
-            const { taskId: newTaskId } = dbNewTaskId as Pick<TProjectTask, 'taskId'>;
+            const { taskId: newTaskId } = dbNewTaskId as TTaskId;
 
             if (tagIds.length) await this._insertTags(newTaskId, tagIds, connection);
             await connection.commit();
@@ -125,6 +159,44 @@ class TasksServiceImpl implements TasksService {
         }
 
         return { message: `Successfully added new task, name: '${taskCommonData.name}'` };
+    };
+
+    public editTask = async (taskData: TTaskEdit): Promise<TPayloadResponse<TProjectTask[]>> => {
+        const { getUpdateTaskCommon, getUpdateTagsSql } = updateSql;
+        const { tagIds, deleteTagIds, ...taskCommonData } = taskData;
+
+        const connection = await sqlPool.getConnection();
+        try {
+            await connection.beginTransaction();
+            try {
+                await connection.query(getUpdateTaskCommon(taskCommonData));
+            } catch (error: unknown) {
+                const { code } = error as QueryError;
+                if (code === 'ER_NO_REFERENCED_ROW_2')
+                    throw new DataModificationError(`Specified userId or statusId are not exists!`);
+                throw error;
+            }
+            await updateDependent<number>(
+                connection,
+                getUpdateTagsSql,
+                taskCommonData.taskId,
+                tagIds,
+                deleteTagIds,
+                'tag'
+            );
+            await connection.commit();
+        } catch (error: unknown) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+
+        const { payload: tasks } = await this.getTasks(taskCommonData.projectId);
+        return {
+            message: `Successfully updated project task, name: '${taskCommonData.name}'`,
+            payload: tasks
+        };
     };
 }
 
