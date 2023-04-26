@@ -1,6 +1,6 @@
 import { compareSync } from 'bcrypt';
 
-import { QueryError } from 'mysql2/index';
+import { QueryError } from 'mysql2';
 import { TAuthPayload, TRefreshToken, TUserLogin } from '@type/schemas/auth';
 import { TAuthResponse, TLoginResponse, TPayloadResponse } from '@type/schemas/response';
 import { TUser } from '@type/schemas/user';
@@ -91,7 +91,7 @@ class AuthServiceImpl implements AuthService {
         if (!compareSync(password, passwordHash))
             throw new NoDataError(`Incorrect username or password!`);
 
-        const accessToken = auth.createJwtToken({ username, role: user.role });
+        const accessToken = auth.createJwtToken({ userId: user.userId, role: user.role });
         const { token: refreshToken, expireDate } = auth.createRefreshToken();
 
         try {

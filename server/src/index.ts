@@ -23,7 +23,7 @@ app.use(bodyParser.json() as RequestHandler);
 app.use(logRequest);
 app.use('/', appRouter);
 
-log.debug(auth.createJwtToken({ username: 'root', role: ACCESS_ROLE.admin }));
+log.debug(auth.createJwtToken({ userId: 1, role: ACCESS_ROLE.admin }));
 
 app.listen(port, () => {
     log.info(`Server running on port: ${port}`);

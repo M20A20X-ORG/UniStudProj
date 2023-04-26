@@ -1,35 +1,42 @@
 import { RequestHandler } from 'express';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-import { TResponse } from '@type/schemas/response';
 
+import { AuthenticationError } from '@exceptions/AuthenticationError';
 import { AuthorizationError } from '@exceptions/AuthorizationError';
 
-import { log } from '@configs/logger';
 import { auth } from '@configs/auth';
+import { sendResponse } from '@utils/sendResponse';
 
-export const requireAuth = (...requiredRoles: string[]): RequestHandler => {
+export const requireAuth = (
+    requiredRoles: string[],
+    requiredProjectRoles?: string[]
+): RequestHandler => {
     return async (req, res, next) => {
-        const { authorization } = req.headers || {};
-        if (typeof authorization !== 'string')
-            return res.status(401).json({
-                message: 'Authorization header is invalid or not exists!'
-            } as TResponse);
-
         try {
+            const { authorization } = req.headers || {};
+            if (typeof authorization !== 'string')
+                throw new AuthenticationError("Header 'authorization' is invalid or not exists!");
+
             const accessTokenPayload = await auth.validateJwtToken(authorization);
             auth.authorizeAccess(accessTokenPayload, requiredRoles);
+            req.user = accessTokenPayload;
+
+            if (requiredProjectRoles?.length)
+                await auth.authorizeProjectAccess(req, requiredProjectRoles);
+
+            return next();
         } catch (error: unknown) {
+            let responseStatus = 500;
+            if (error instanceof AuthorizationError) responseStatus = 403;
+            else if (
+                error instanceof TokenExpiredError ||
+                error instanceof JsonWebTokenError ||
+                error instanceof AuthenticationError
+            )
+                responseStatus = 401;
+
             const { stack, message } = error as Error;
-            if (error instanceof TokenExpiredError || error instanceof JsonWebTokenError) {
-                log.warn(message);
-                return res.status(401).json({ message } as TResponse);
-            } else if (error instanceof AuthorizationError) {
-                log.warn(message);
-                return res.status(403).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.status(500).json({ message } as TResponse);
+            return sendResponse(res, responseStatus, message, stack);
         }
-        return next();
     };
 };

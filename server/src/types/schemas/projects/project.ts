@@ -23,6 +23,7 @@ export type TProject = {
 
 export type TProjectJson<T> = { project: T };
 
+export type TProjectId = Pick<TProject, 'projectId'>;
 export type TProjectParticipantId = Pick<TProjectParticipant, 'userId' | 'projectRoleId'>;
 export type TProjectCreation = Pick<TProject, 'name' | 'description' | 'dateStart' | 'dateEnd'> & {
     tagIds: Array<number>;

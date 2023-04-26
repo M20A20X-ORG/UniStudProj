@@ -10,7 +10,7 @@ import { authController } from '@controllers/auth';
 const router = createChildRouter();
 const { user, admin } = ACCESS_ROLE;
 
-router.get('/token', requireAuth(admin, user), authController.getRefreshJwtToken);
+router.get('/token', requireAuth([admin, user]), authController.getRefreshJwtToken);
 router.post(
     '/login',
     requireSchemaValidator('http://example.com/schemas/auth/login'),

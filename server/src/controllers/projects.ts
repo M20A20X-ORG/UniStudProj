@@ -1,14 +1,12 @@
 import { RequestHandler } from 'express';
-import { TResponse } from '@type/schemas/response';
 import { TProjectCreation, TProjectEdit, TProjectJson } from '@type/schemas/projects/project';
 
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 import { NoDataError } from '@exceptions/NoDataError';
-
-import { log } from '@configs/logger';
 import { projectsService } from '@services/projects';
+import { sendResponse } from '@utils/sendResponse';
 
 interface ProjectsController {
     getGetProject: RequestHandler;
@@ -26,12 +24,9 @@ class ProjectsControllerImpl implements ProjectsController {
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof DataDeletionError) {
-                log.warn(message);
-                return res.status(409).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.status(500);
+            let responseStatus = 500;
+            if (error instanceof DataDeletionError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 
@@ -42,12 +37,9 @@ class ProjectsControllerImpl implements ProjectsController {
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof NoDataError) {
-                log.warn(message);
-                return res.status(404).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.sendStatus(500);
+            let responseStatus = 500;
+            if (error instanceof NoDataError) responseStatus = 404;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 
@@ -59,12 +51,9 @@ class ProjectsControllerImpl implements ProjectsController {
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof DataAddingError) {
-                log.warn(message);
-                return res.status(409).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.status(500);
+            let responseStatus = 500;
+            if (error instanceof DataAddingError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 
@@ -76,12 +65,9 @@ class ProjectsControllerImpl implements ProjectsController {
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof DataModificationError) {
-                log.warn(message);
-                return res.status(409).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.sendStatus(500);
+            let responseStatus = 500;
+            if (error instanceof DataModificationError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 }
