@@ -1,6 +1,6 @@
 import { QueryError } from 'mysql2';
 
-import { TDependency, TGetSql } from '@type/sql';
+import { TDependency } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import {
     TProject,
@@ -15,10 +15,10 @@ import {
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { NoDataError } from '@exceptions/NoDataError';
-import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sqlPool } from '@configs/sqlPool';
 import { PROJECT_SQL } from '@static/sql/projects';
+import { updateDependent } from '@utils/updateDependent';
 
 const { readSql, deleteSql, createSql, updateSql } = PROJECT_SQL;
 
@@ -138,33 +138,6 @@ class ProjectsServiceImpl implements ProjectsService {
     };
 
     public editProject = async (projectData: TProjectEdit): Promise<TPayloadResponse<TProject>> => {
-        const updateDependent = async <T>(
-            getSql: TGetSql<T>,
-            projectId: number,
-            data: Array<T> | undefined,
-            deleteData: number[] | undefined,
-            errNoRefStr: string,
-            errDupEntryStr: string = errNoRefStr
-        ) => {
-            const [insertSql, deleteSql, updateAmountSql] = getSql(projectId, data, deleteData);
-            if (deleteSql) await connection.query(deleteSql);
-            try {
-                if (insertSql) await connection.query(insertSql);
-            } catch (error: unknown) {
-                const { code } = error as QueryError;
-                if (code === 'ER_NO_REFERENCED_ROW_2')
-                    throw new DataModificationError(
-                        `Specified project, ${errNoRefStr} are not exists!`
-                    );
-                else if (code === 'ER_DUP_ENTRY')
-                    throw new DataModificationError(
-                        `Specified ${errDupEntryStr} already added to this project!`
-                    );
-                throw error;
-            }
-            if (deleteSql || insertSql) await connection.query(updateAmountSql);
-        };
-
         const {
             projectId,
             participantIds,
@@ -179,8 +152,16 @@ class ProjectsServiceImpl implements ProjectsService {
         try {
             await connection.beginTransaction();
             await connection.query(getUpdateProjectsSql({ projectId, ...projectCommonData }));
-            await updateDependent<number>(getUpdateTagsSql, projectId, tagIds, deleteTagIds, 'tag');
+            await updateDependent<number>(
+                connection,
+                getUpdateTagsSql,
+                projectId,
+                tagIds,
+                deleteTagIds,
+                'tag'
+            );
             await updateDependent<TProjectParticipantId>(
+                connection,
                 getUpdateParticipantsSql,
                 projectId,
                 participantIds,
