@@ -1,22 +1,27 @@
-import { TProjectTag } from '@type/schemas/projects/project';
+import { TProjectId, TProjectTag } from '@type/schemas/projects/project';
 import { TUser } from '@type/schemas/user';
 
 export type TTaskStatus = { statusId: number; status: string };
-export type TProjectTask = {
+export type TAssignedUser = Pick<TUser, 'userId' | 'username'>;
+export type TProjectTask = TProjectId & {
     taskId: number;
-    projectId: number;
     name: string;
     description?: string;
     status: TTaskStatus;
-    assignUser: Pick<TUser, 'userId' | 'username'>;
+    assignUser: TAssignedUser;
     tags: TProjectTag[];
 };
 
 export type TTaskJson<T> = { task: T };
 
-export type TTaskCreation = Pick<TProjectTask, 'name' | 'description' | 'projectId'> & {
-    assignUserId: number;
-    statusId: number;
-    tagIds: Array<number>;
-};
-export type TTaskPartial = Pick<TProjectTask, 'taskId' | 'projectId'> & Partial<TTaskCreation>;
+export type TTaskId = Pick<TProjectTask, 'taskId'>;
+export type TTaskCreation = TProjectId &
+    Pick<TProjectTask, 'name' | 'description'> & {
+        assignUserId: number;
+        statusId: number;
+        tagIds: Array<number>;
+    };
+export type TTaskEdit = TTaskId &
+    TProjectId &
+    Partial<TTaskCreation & { deleteTagIds: Array<number> }>;
+export type TTaskEditCommon = Omit<TTaskEdit, 'tagIds' | 'deleteTagIds'>;

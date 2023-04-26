@@ -1,8 +1,10 @@
 import { RequestHandler } from 'express';
-import { TTaskCreation, TTaskJson } from '@type/schemas/projects/tasks';
+import { TTaskCreation, TTaskEdit, TTaskJson } from '@type/schemas/projects/tasks';
 
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { DataAddingError } from '@exceptions/DataAddingError';
+import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
 import { tasksService } from '@services/tasks';
@@ -32,6 +34,20 @@ class TasksControllerImpl implements TasksController {
         }
     };
 
+    public getGetTask: RequestHandler = async (req, res) => {
+        const projectId = parseInt(req.query.projectId as string);
+
+        try {
+            const serviceResponse = await tasksService.getTasks(projectId);
+            return res.status(201).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof NoDataError) responseStatus = 404;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
     public postCreateTask: RequestHandler = async (req, res) => {
         const { task } = req.body as TTaskJson<TTaskCreation>;
 
@@ -45,6 +61,20 @@ class TasksControllerImpl implements TasksController {
             if (error instanceof DataAddingError) status = 409;
 
             return sendResponse(res, status, message, stack);
+        }
+    };
+
+    public putEditTask: RequestHandler = async (req, res) => {
+        const { task } = req.body as TTaskJson<TTaskEdit>;
+
+        try {
+            const serviceResponse = await tasksService.editTask(task);
+            return res.status(201).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof DataModificationError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 }
