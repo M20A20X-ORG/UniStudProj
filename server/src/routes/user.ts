@@ -17,17 +17,17 @@ router.post(
     requireSchemaValidator('http://example.com/schemas/user/registration'),
     usersController.postRegisterUser
 );
-router.get('/get', requireQueryValidator(USER_QUERY.userId), usersController.getGetUser);
+router.get('/get', ...requireQueryValidator(USER_QUERY.userId), usersController.getGetUser);
 router.put(
     '/edit',
-    requireAuth(admin, user),
+    requireAuth([admin, user]),
     requireSchemaValidator('http://example.com/schemas/user/edit'),
     usersController.putEditUser
 );
 router.delete(
     '/delete',
-    requireAuth(admin, user),
     ...requireQueryValidator(USER_QUERY.userId),
+    requireAuth([admin, user]),
     usersController.deleteDeleteUser
 );
 
