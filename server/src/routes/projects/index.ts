@@ -20,20 +20,20 @@ router.get(
 );
 router.post(
     '/create',
-    requireAuth(user, admin),
+    requireAuth([user, admin]),
     requireSchemaValidator('http://example.com/schemas/project/create'),
     projectsController.postCreateProject
 );
 router.put(
     '/edit',
-    requireAuth(user, admin),
+    requireAuth([user, admin]),
     requireSchemaValidator('http://example.com/schemas/project/edit'),
     projectsController.putEditProject
 );
 router.delete(
     '/delete',
-    requireAuth(user, admin),
     ...requireQueryValidator(PROJECT_QUERY.projectId),
+    requireAuth([user, admin]),
     projectsController.deleteDeleteProject
 );
 

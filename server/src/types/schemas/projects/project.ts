@@ -4,7 +4,7 @@ export type TProjectParticipant = {
     projectRoleId: number;
     projectRole: string;
 };
-export type TTag = {
+export type TProjectTag = {
     tagId: number;
     tag: string;
 };
@@ -17,12 +17,13 @@ export type TProject = {
     tagsAmount: number;
     dateStart: string;
     dateEnd: string;
-    tags: TTag[];
+    tags: TProjectTag[];
     participants: TProjectParticipant[];
 };
 
 export type TProjectJson<T> = { project: T };
 
+export type TProjectId = Pick<TProject, 'projectId'>;
 export type TProjectParticipantId = Pick<TProjectParticipant, 'userId' | 'projectRoleId'>;
 export type TProjectCreation = Pick<TProject, 'name' | 'description' | 'dateStart' | 'dateEnd'> & {
     tagIds: Array<number>;

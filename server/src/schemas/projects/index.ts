@@ -1,11 +1,10 @@
-import { check } from 'express-validator';
+import { query } from 'express-validator';
 
 import { participantIdsSchema } from './participantIdsSchema';
 import { creationSchema } from './creationSchema';
 import { editSchema } from './editSchema';
 
 import { TSchemaFormats, TSchemas } from '@type/schema';
-import { RequestParamsError } from '@exceptions/RequestParamsError';
 
 export const PROJECT_SCHEMA: TSchemas = {
     participantIdsSchema,
@@ -18,12 +17,8 @@ export const PROJECT_FORMATS: TSchemaFormats = {
 } as const;
 
 export const PROJECT_QUERY = {
-    projectId: check('projectId')
-        .isInt()
-        .withMessage(new RequestParamsError('projectId must be a number >= 1').message),
-    projectIds: check('projectIds')
-        .optional()
+    projectId: query('projectId', 'projectId must be a number >= 1').isInt(),
+    projectIds: query('projectIds', 'projectIds must be an array of numbers >= 1')
         .isArray()
         .custom((projectIds: any[]) => projectIds.every((elem) => !isNaN(elem) && elem >= 1))
-        .withMessage(new RequestParamsError('projectIds must be an array of numbers >= 1').message)
 } as const;

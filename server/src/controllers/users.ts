@@ -1,14 +1,12 @@
 import { RequestHandler } from 'express';
-import { TResponse } from '@type/schemas/response';
 import { TUserJson, TUserPartial, TUserRegistration } from '@type/schemas/user';
 
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { NoDataError } from '@exceptions/NoDataError';
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataModificationError } from '@exceptions/DataModificationError';
-
-import { log } from '@configs/logger';
 import { usersService } from '@services/users';
+import { sendResponse } from '@utils/sendResponse';
 
 interface UsersController {
     getGetUser: RequestHandler;
@@ -27,12 +25,9 @@ class UsersControllerImpl implements UsersController {
             return res.status(204).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof DataDeletionError) {
-                log.warn(message);
-                return res.status(409).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.status(500);
+            let responseStatus = 500;
+            if (error instanceof DataDeletionError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 
@@ -48,12 +43,9 @@ class UsersControllerImpl implements UsersController {
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof NoDataError) {
-                log.warn(message);
-                return res.status(404).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.sendStatus(500);
+            let responseStatus = 500;
+            if (error instanceof NoDataError) responseStatus = 404;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 
@@ -65,12 +57,9 @@ class UsersControllerImpl implements UsersController {
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof DataAddingError) {
-                log.warn(message);
-                return res.status(409).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.sendStatus(500);
+            let responseStatus = 500;
+            if (error instanceof DataAddingError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 
@@ -82,12 +71,9 @@ class UsersControllerImpl implements UsersController {
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof DataModificationError) {
-                log.warn(message);
-                return res.status(409).json({ message } as TResponse);
-            }
-            log.err(stack ?? message);
-            return res.sendStatus(500);
+            let responseStatus = 500;
+            if (error instanceof DataModificationError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
         }
     };
 }

@@ -1,4 +1,4 @@
-import { TTag } from '@type/schemas/projects/project';
+import { TProjectTag } from '@type/schemas/projects/project';
 import { TUser } from '@type/schemas/user';
 
 export type TTaskStatus = { statusId: number; status: string };
@@ -9,7 +9,7 @@ export type TProjectTask = {
     description?: string;
     status: TTaskStatus;
     assignUser: Pick<TUser, 'userId' | 'username'>;
-    tags: TTag[];
+    tags: TProjectTag[];
 };
 
 export type TTaskJson<T> = { task: T };
