@@ -51,6 +51,9 @@
       "@services/*": [
         "./services/*"
       ],
+      "@static/*": [
+        "./static/*"
+      ],
       "@type/*": [
         "./types/*"
       ],
