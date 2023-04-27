@@ -4,7 +4,7 @@ export type TProjectParticipant = {
     projectRoleId: number;
     projectRole: string;
 };
-export type TProjectTag = {
+export type TTag = {
     tagId: number;
     tag: string;
 };
@@ -17,7 +17,7 @@ export type TProject = {
     tagsAmount: number;
     dateStart: string;
     dateEnd: string;
-    tags: TProjectTag[];
+    tags: TTag[];
     participants: TProjectParticipant[];
 };
 
