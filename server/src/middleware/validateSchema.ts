@@ -1,11 +1,10 @@
 import { RequestHandler } from 'express';
-import { TResponse } from '@type/schemas/response';
 
 import { NoSchemaError } from '@exceptions/NoSchemaError';
 import { SchemaValidationError } from '@exceptions/SchemaValidationError';
 
-import { log } from '@configs/logger';
 import { ajv } from '@configs/schemas';
+import { sendResponse } from '@utils/sendResponse';
 
 export const requireSchemaValidator = (schema: string): RequestHandler => {
     const validate = ajv.getSchema(schema);
@@ -17,13 +16,14 @@ export const requireSchemaValidator = (schema: string): RequestHandler => {
             const [error] = validate.errors;
             const { params, keyword, instancePath } = error;
 
-            let errMessage: string = error.message ?? '';
-            if (keyword === 'format')
-                errMessage = `'${instancePath}' must match format: '${ajv.formats[params.format]}'`;
+            let errMessage = `'${instancePath}' `;
+            if ((keyword === 'required' || keyword === 'type') && error.message)
+                errMessage = errMessage + error.message;
+            else if (keyword === 'format')
+                errMessage = errMessage + `must match format: '${ajv.formats[params.format]}'`;
 
-            const message = new SchemaValidationError(errMessage).message;
-            log.err(message);
-            return res.status(400).send({ message } as TResponse);
+            const { message } = new SchemaValidationError(errMessage);
+            return sendResponse(res, 400, message, undefined);
         }
     };
 };
