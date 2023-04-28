@@ -21,8 +21,18 @@ export const requireAuth = (
             auth.authorizeAccess(accessTokenPayload, requiredRoles);
             req.user = accessTokenPayload;
 
-            if (requiredProjectRoles?.length)
-                await auth.authorizeProjectAccess(req, requiredProjectRoles);
+            if (requiredProjectRoles?.length) {
+                const { 'project-id': projectIdHeader } = req.headers || {};
+                const projectId = parseInt(projectIdHeader || '');
+                if (isNaN(projectId))
+                    throw new AuthenticationError("Header 'project-id' is invalid or not exists!");
+
+                await auth.authorizeProjectAccess(
+                    projectId,
+                    accessTokenPayload.userId,
+                    requiredProjectRoles
+                );
+            }
 
             return next();
         } catch (error: unknown) {

@@ -1,17 +1,3 @@
-import { TAuthPayload } from '@type/schemas/auth';
-
-declare module 'http' {
-    interface IncomingHttpHeaders {
-        'refresh-token'?: string;
-    }
-}
-
-declare module 'express-serve-static-core' {
-    interface Request {
-        user: TAuthPayload | undefined;
-    }
-}
-
 export type TUser = {
     userId: number;
     role: string;

@@ -12,9 +12,10 @@
 .env.production.local
 .idea
 
-#cache / log
+#cache / log / storage
 .eslintcache
 /log
+/storage
 
 npm-debug.log*
 yarn-debug.log*
