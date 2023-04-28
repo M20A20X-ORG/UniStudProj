@@ -14,7 +14,6 @@ export const QUESTION_SCHEMA: TSchemas = {
 
 export const QUESTION_QUERY = {
     questionIds: query('questionIds', 'questionIds must be an array of numbers >= 1')
-        .optional()
         .isArray()
         .custom((questionIds: any[]) => questionIds.every((elem) => !isNaN(elem) && elem >= 1))
 } as const;
