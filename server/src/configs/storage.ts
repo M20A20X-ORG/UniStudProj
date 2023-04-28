@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import * as process from 'process';
 import multer, { diskStorage, Options } from 'multer';
 
 import { TSetupUpload, TUpload } from '@type/storage';
@@ -10,7 +11,7 @@ interface StorageConfig {
 }
 
 class StorageConfigImpl implements StorageConfig {
-    public STORAGE_ROOT = '/storage';
+    public STORAGE_ROOT = process.cwd() + '/storage';
     private MAX_FILE_SIZE_B = 1048576;
 
     private _upload: TUpload = {};

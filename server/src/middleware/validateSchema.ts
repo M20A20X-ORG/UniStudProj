@@ -16,11 +16,11 @@ export const requireSchemaValidator = (schema: string): RequestHandler => {
             const [error] = validate.errors;
             const { params, keyword, instancePath } = error;
 
-            let errMessage = `'${instancePath}' `;
-            if ((keyword === 'required' || keyword === 'type') && error.message)
-                errMessage = errMessage + error.message;
+            let errMessage = error.message ?? '';
+            if (keyword === 'required' || keyword === 'type')
+                errMessage = `'${instancePath}' ${error.message}`;
             else if (keyword === 'format')
-                errMessage = errMessage + `must match format: '${ajv.formats[params.format]}'`;
+                errMessage = `'${instancePath}' must match format: '${ajv.formats[params.format]}'`;
 
             const { message } = new SchemaValidationError(errMessage);
             return sendResponse(res, 400, message, undefined);

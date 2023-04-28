@@ -11,15 +11,13 @@ import {
     verify,
     VerifyOptions
 } from 'jsonwebtoken';
-import { Request } from 'express';
-import { TAuthPayload, TPartialKey, TRefreshToken } from '@type/schemas/auth';
+import { TAuthPayload, TRefreshToken } from '@type/schemas/auth';
 
 import { InvalidAccessRolesError } from '@exceptions/InvalidAccessRolesError';
 import { AuthorizationError } from '@exceptions/AuthorizationError';
 import { AuthenticationError } from '@exceptions/AuthenticationError';
 
 import { AUTH_SQL } from '@static/sql/auth';
-import { TProjectId } from '@type/schemas/projects/project';
 import { sqlPool } from '@configs/sqlPool';
 
 interface Auth {
@@ -99,27 +97,10 @@ class AuthImpl implements Auth {
     };
 
     public authorizeProjectAccess = async (
-        req: Request,
+        projectId: number,
+        userId: number,
         requiredProjectRoles: string[]
     ): Promise<void> => {
-        const { user, body, query } = req || {};
-        const { userId } = user as TAuthPayload;
-
-        const projectIdStr = query?.projectId;
-        let projectId = undefined;
-
-        if (typeof projectIdStr === 'string') projectId = parseInt(projectIdStr);
-        if (!projectId || isNaN(projectId)) {
-            const errMessage = "'projectId' must be included in request body or query!";
-            if (!body) throw new AuthorizationError(errMessage);
-            else {
-                const pBody = body as TPartialKey<TProjectId>;
-                const projectIdKey = Object.keys(pBody).filter((key) => body[key]?.projectId)?.[0];
-                if (!projectIdKey) throw new AuthenticationError(errMessage);
-                projectId = body[projectIdKey]?.projectId;
-            }
-        }
-
         const dbProjectRoleResponse = await sqlPool.query(AUTH_SQL.selectProjectRole, [
             projectId,
             userId
