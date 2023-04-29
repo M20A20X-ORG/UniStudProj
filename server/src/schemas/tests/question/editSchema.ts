@@ -13,7 +13,7 @@ export const editPureSchema: TEditPureSchema = {
         question: { type: 'string', nullable: true },
         options: {
             type: 'array',
-            items: { $ref: '/schemas/test/question/option' } as any,
+            items: { $ref: '/schemas/test/question/option-edit' } as any,
             minItems: 0,
             maxItems: 50,
             nullable: true

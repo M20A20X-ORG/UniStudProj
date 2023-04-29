@@ -1,21 +1,23 @@
 import { RequestHandler } from 'express';
-import { TQuestionCreation, TQuestionsJson } from '@type/schemas/tests/question';
+import { TQuestionCreation, TQuestionEdit, TQuestionsJson } from '@type/schemas/tests/question';
 
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { DataAddingError } from '@exceptions/DataAddingError';
+import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
 import { questionsService } from '@services/question';
 
 interface QuestionsController {
-    postCreateQuestion: RequestHandler;
-    deleteDeleteQuestion: RequestHandler;
-    getGetQuestion?: RequestHandler;
-    putEditQuestion?: RequestHandler;
+    deleteDeleteQuestions: RequestHandler;
+    postCreateQuestions: RequestHandler;
+    getGetQuestions: RequestHandler;
+    putEditQuestions?: RequestHandler;
 }
 
 class QuestionsControllerImpl implements QuestionsController {
-    public deleteDeleteQuestion: RequestHandler = async (req, res) => {
+    public deleteDeleteQuestions: RequestHandler = async (req, res) => {
         try {
             const questionIdsParam = req.query.questionIds as string[];
             const questionIds = questionIdsParam.map((idStr) => parseInt(idStr));
@@ -30,7 +32,7 @@ class QuestionsControllerImpl implements QuestionsController {
         }
     };
 
-    public postCreateQuestion: RequestHandler = async (req, res) => {
+    public postCreateQuestions: RequestHandler = async (req, res) => {
         try {
             const { questions } = req.body as TQuestionsJson<TQuestionCreation[]>;
 
@@ -40,6 +42,36 @@ class QuestionsControllerImpl implements QuestionsController {
             const { message, stack } = error as Error;
             let responseStatus = 500;
             if (error instanceof DataAddingError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
+    public getGetQuestions: RequestHandler = async (req, res) => {
+        try {
+            const questionIdsParam = req.query.questionIds as string[];
+            const questionIds = questionIdsParam.map((idStr) => parseInt(idStr));
+
+            const serviceResponse = await questionsService.getQuestions(questionIds);
+            return res.status(201).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof NoDataError) responseStatus = 404;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
+    public putEditQuestions: RequestHandler = async (req, res) => {
+        try {
+            const { questions } = req.body as TQuestionsJson<TQuestionEdit[]>;
+
+            const serviceResponse = await questionsService.editQuestions(questions);
+            return res.status(201).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof NoDataError) responseStatus = 404;
+            if (error instanceof DataModificationError) responseStatus = 409;
             return sendResponse(res, responseStatus, message, stack);
         }
     };

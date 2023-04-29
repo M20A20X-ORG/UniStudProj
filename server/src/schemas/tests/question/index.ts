@@ -2,6 +2,7 @@ import { query } from 'express-validator';
 
 import { creationPureSchema, creationSchema } from './creationSchema';
 import { editPureSchema, editSchema } from './editSchema';
+import { optionSchema, optionSchemaEdit } from './optionSchema';
 
 import { TSchemas } from '@type/schema';
 
@@ -9,7 +10,9 @@ export const QUESTION_SCHEMA: TSchemas = {
     creationSchema,
     creationPureSchema,
     editSchema,
-    editPureSchema
+    editPureSchema,
+    optionSchema,
+    optionSchemaEdit
 } as const;
 
 export const QUESTION_QUERY = {

@@ -1,6 +1,4 @@
 import { query } from 'express-validator';
-
-import { optionSchema } from './question/optionSchema';
 import { creationSchema } from './creationSchema';
 import { editSchema } from './editSchema';
 
@@ -8,7 +6,6 @@ import { TSchemaFormats, TSchemas } from '@type/schema';
 import { PROJECT_FORMATS } from '@schemas/projects';
 
 export const TEST_SCHEMA: TSchemas = {
-    optionSchema,
     creationSchema,
     editSchema
 } as const;

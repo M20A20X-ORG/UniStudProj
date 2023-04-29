@@ -2,6 +2,7 @@ export type TOption = {
     text: string;
     imageUrl?: string;
 };
+export type TOptionEdit = Partial<TOption> & { optionId: number };
 
 export type TQuestion = {
     questionId: number;
@@ -23,4 +24,9 @@ export type TQuestionCreation = Omit<TQuestion, 'questionId' | 'type' | 'progLan
     progLangId?: number;
 };
 export type TQuestionEdit = TQuestionId &
-    Partial<TQuestionCreation & { deleteOptionIds: Array<number> }>;
+    Partial<
+        Omit<TQuestionCreation, 'options'> & {
+            deleteOptionIds: Array<number>;
+            options: Array<TOptionEdit>;
+        }
+    >;

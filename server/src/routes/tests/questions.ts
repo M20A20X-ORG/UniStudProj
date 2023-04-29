@@ -17,14 +17,25 @@ router.delete(
     '/delete',
     ...requireQueryValidator(QUESTION_QUERY.questionIds),
     requireAuth([admin, user], [mentor]),
-    questionsController.deleteDeleteQuestion
+    questionsController.deleteDeleteQuestions
 );
 router.post(
     '/create',
     requireSchemaValidator('http://example.com/schemas/test/question/creation'),
     requireAuth([admin, user], [mentor]),
-    questionsController.postCreateQuestion
+    questionsController.postCreateQuestions
 );
-router.put('/edit', (req, res) => res.json('edit'));
+router.get(
+    '/get',
+    ...requireQueryValidator(QUESTION_QUERY.questionIds),
+    requireAuth([admin, user]),
+    questionsController.getGetQuestions
+);
+router.put(
+    '/edit',
+    requireSchemaValidator('http://example.com/schemas/test/question/edit'),
+    requireAuth([admin, user], [mentor]),
+    questionsController.putEditQuestions
+);
 
 export const questionsRouter = router;
