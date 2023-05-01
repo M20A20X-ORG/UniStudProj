@@ -3,18 +3,19 @@ import { PoolConnection } from 'mysql2/promise';
 
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import { TTest, TTestCreation, TTestEdit, TTestId } from '@type/schemas/tests/test';
+import { TQuestionId } from '@type/schemas/tests/question';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { TEST_SQL } from '@static/sql/test';
 import { COMMON_SQL } from '@static/sql/common';
 
 import { sqlPool } from '@configs/sqlPool';
 import { questionsService } from '@services/question';
-import { TQuestionId } from '@type/schemas/tests/question';
-import { DataModificationError } from '@exceptions/DataModificationError';
 import { updateDependent } from '@utils/updateDependent';
+import { TProjectId } from '@type/schemas/projects/project';
 
 const { createSql, deleteSql, readSql, updateSql } = TEST_SQL;
 const { getSelectLastInsertId } = COMMON_SQL;
@@ -35,7 +36,6 @@ class TestsServiceImpl implements TestsService {
     ///// Private /////
     private _insertTest = async (connection: PoolConnection, testData: TTestCreation) => {
         const { getInsertTestCommon, getInsertQuestionsOfTests } = createSql;
-
         const { questionIds, ...questionCommonData } = testData;
 
         const questionsAmount = questionIds ? questionIds.length : 0;
@@ -104,6 +104,8 @@ class TestsServiceImpl implements TestsService {
 
     ///// Public /////
     public createTests = async (testsData: TTestCreation[]): Promise<TResponse> => {
+        const { getInsertTestsOfProjects } = createSql;
+
         const connection = await sqlPool.getConnection();
         try {
             await connection.beginTransaction();
@@ -120,6 +122,23 @@ class TestsServiceImpl implements TestsService {
             );
 
             await Promise.all(promiseInserts);
+
+            const getSelectTestLIId = getSelectLastInsertId('testId');
+            const dbNewTestIdResponse = await connection.query(getSelectTestLIId);
+            const [[dbNewTestId]] = dbNewTestIdResponse as any;
+            if (!dbNewTestId) throw new DataAddingError('Error adding new test!');
+            const { testId } = dbNewTestId as TTestId;
+
+            const testsAmount = testsData.length;
+            const testsOfProjects: Array<TProjectId & TTestId> = Array(testsAmount)
+                .fill(null)
+                .map((_, id) => ({
+                    testId: testId - testsAmount + id,
+                    projectId: testsData[id].projectId
+                }));
+            const insertTestsOfProjects = getInsertTestsOfProjects(testsOfProjects);
+            await connection.query(insertTestsOfProjects);
+
             await connection.commit();
             return {
                 message: `Successfully added new tests, amount: '${promiseInserts.length}'`

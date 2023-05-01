@@ -7,8 +7,6 @@ import { NoDataError } from '@exceptions/NoDataError';
 
 import { sendResponse } from '@utils/sendResponse';
 import { testsService } from '@services/test';
-import { TQuestionEdit, TQuestionsJson } from '@type/schemas/tests/question';
-import { questionsService } from '@services/question';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
 interface TestsController {

@@ -15,6 +15,7 @@ const { admin, user } = ACCESS_ROLE;
 const { mentor } = PROJECT_ACCESS_ROLE;
 const { testIds, needCommonDataOnly } = TEST_QUERY;
 
+///// CRUD /////
 router.post(
     '/create',
     requireSchemaValidator('http://example.com/schemas/test/creation'),
@@ -39,6 +40,8 @@ router.delete(
     requireAuth([admin, user], [mentor]),
     testsController.deleteTests
 );
+
+///// Usage /////
 
 router.use('/questions', questionsRouter);
 
