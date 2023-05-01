@@ -17,7 +17,11 @@ export const TEST_FORMAT: TSchemaFormats = {
 } as const;
 
 export const TEST_QUERY = {
-    testIds: query('testIds', 'testIds must be an array of numbers >= 1')
+    testIds: query('testIds', "'testIds' must be an array of numbers >= 1")
+        .optional()
         .isArray()
-        .custom((testIds: any[]) => testIds.every((elem) => !isNaN(elem) && elem >= 1))
+        .custom((testIds: any[]) => testIds.every((elem) => !isNaN(elem) && elem >= 1)),
+    needCommonDataOnly: query('needCommonDataOnly', "'needCommonDataOnly' must be boolean value")
+        .optional()
+        .isBoolean()
 } as const;

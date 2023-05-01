@@ -17,5 +17,4 @@ export type TTestId = Pick<TTest, 'testId'>;
 export type TTestCreation = Omit<TTest, 'questionsAmount' | 'testId' | 'questions'> &
     TProjectId & { questionIds: Array<number> };
 export type TTestEdit = TTestId &
-    TProjectId &
-    Partial<TTestCreation> & { deleteQuestionIds?: Array<number> };
+    Partial<Omit<TTestCreation, 'projectId'>> & { deleteQuestionIds?: Array<number> };

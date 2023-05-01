@@ -9,7 +9,6 @@ export const editPureSchema: TEditPureSchema = {
     type: 'object',
     properties: {
         testId: { type: 'integer', minimum: 1 },
-        projectId: { type: 'integer', minimum: 1 },
         name: { type: 'string', format: 'testName', nullable: true },
         timeLimit: { type: 'integer', minimum: 30, nullable: true },
         dateStart: { type: 'string', nullable: true },
@@ -30,7 +29,7 @@ export const editPureSchema: TEditPureSchema = {
         }
     },
     additionalProperties: false,
-    required: ['testId', 'projectId']
+    required: ['testId']
 };
 
 export const editSchema: TEditSchema = {

@@ -2,8 +2,8 @@ import { AUTH_SCHEMA } from './auth';
 import { USER_FORMAT, USER_SCHEMA } from './users';
 import { PROJECT_FORMATS, PROJECT_SCHEMA } from './projects';
 import { TASK_FORMATS, TASK_SCHEMA } from './projects/tasks';
-import { TEST_FORMAT, TEST_SCHEMA } from '@schemas/tests';
-import { QUESTION_SCHEMA } from '@schemas/tests/question';
+import { TEST_FORMAT, TEST_SCHEMA } from './tests';
+import { QUESTION_SCHEMA } from './tests/question';
 
 import { TSchemaFormatGeneral, TSchemaGeneral } from '@type/schema';
 

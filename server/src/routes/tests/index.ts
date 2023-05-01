@@ -1,27 +1,41 @@
 import { questionsRouter } from './questions';
+
+import { ACCESS_ROLE, PROJECT_ACCESS_ROLE } from '@configs/auth';
+import { TEST_QUERY } from '@schemas/tests';
+
 import { createChildRouter } from '@utils/router';
+import { requireQueryValidator } from '@middleware/validateQuery';
 import { requireSchemaValidator } from '@middleware/validateSchema';
 import { requireAuth } from '@middleware/auth';
-import { ACCESS_ROLE, PROJECT_ACCESS_ROLE } from '@configs/auth';
+
 import { testsController } from '@controllers/test';
-import { requireQueryValidator } from '@middleware/validateQuery';
-import { TEST_QUERY } from '@schemas/tests';
 
 const router = createChildRouter();
 const { admin, user } = ACCESS_ROLE;
 const { mentor } = PROJECT_ACCESS_ROLE;
+const { testIds, needCommonDataOnly } = TEST_QUERY;
 
 router.post(
     '/create',
     requireSchemaValidator('http://example.com/schemas/test/creation'),
-    requireAuth([admin, user]),
+    requireAuth([admin, user], [mentor]),
     testsController.postCreateTests
 );
-router.get('/get', (req, res) => res.json('create'));
-router.put('/edit', (req, res) => res.json('edit'));
+router.get(
+    '/get',
+    ...requireQueryValidator(testIds, needCommonDataOnly),
+    requireAuth([admin, user]),
+    testsController.getGetTests
+);
+router.put(
+    '/edit',
+    requireSchemaValidator('http://example.com/schemas/test/edit'),
+    requireAuth([admin, user], [mentor]),
+    testsController.putEditTests
+);
 router.delete(
     '/delete',
-    ...requireQueryValidator(TEST_QUERY.testIds),
+    ...requireQueryValidator(testIds),
     requireAuth([admin, user], [mentor]),
     testsController.deleteTests
 );

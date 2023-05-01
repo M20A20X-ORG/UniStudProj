@@ -5,20 +5,30 @@ import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import { TTest, TTestCreation, TTestEdit, TTestId } from '@type/schemas/tests/test';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
-
-import { sqlPool } from '@configs/sqlPool';
+import { NoDataError } from '@exceptions/NoDataError';
 
 import { TEST_SQL } from '@static/sql/test';
 import { COMMON_SQL } from '@static/sql/common';
 
-const { createSql, deleteSql } = TEST_SQL;
+import { sqlPool } from '@configs/sqlPool';
+import { questionsService } from '@services/question';
+import { TQuestionId } from '@type/schemas/tests/question';
+import { DataModificationError } from '@exceptions/DataModificationError';
+import { updateDependent } from '@utils/updateDependent';
+
+const { createSql, deleteSql, readSql, updateSql } = TEST_SQL;
 const { getSelectLastInsertId } = COMMON_SQL;
+
+type TTestCommon = Omit<TTest, 'questions'>;
 
 interface TestsService {
     createTests: (testData: TTestCreation[]) => Promise<TResponse>;
+    getTests: (
+        testIds: number[],
+        needCommonDataOnly: boolean
+    ) => Promise<TPayloadResponse<Array<TTestCommon | TTest>>>;
+    editTests: (testsData: TTestEdit[]) => Promise<TPayloadResponse<Array<TTestCommon | TTest>>>;
     deleteTests: (testIds: number[]) => Promise<TResponse>;
-    getTests?: (testIds: number[], commonOnly: boolean) => Promise<TPayloadResponse<TTest[]>>;
-    editTests?: (testsData: TTestEdit[]) => Promise<TPayloadResponse<TTest[]>>;
 }
 
 class TestsServiceImpl implements TestsService {
@@ -67,6 +77,31 @@ class TestsServiceImpl implements TestsService {
         }
     };
 
+    private _updateTest = async (connection: PoolConnection, testData: TTestEdit) => {
+        const { getUpdateTestCommon, getUpdateQuestions } = updateSql;
+        const { questionIds, deleteQuestionIds, ...tCommonData } = testData;
+
+        try {
+            const updateTestCommonSql = getUpdateTestCommon(tCommonData);
+            if (updateTestCommonSql) await connection.query(updateTestCommonSql);
+        } catch (error: unknown) {
+            const { code, message } = error as QueryError;
+            if (code === 'ER_DUP_ENTRY')
+                throw new DataModificationError('Specified name of test already used!');
+            if (code === 'ER_TRUNCATED_WRONG_VALUE')
+                throw new DataModificationError(message.split(' for column')[0]);
+            throw error;
+        }
+        await updateDependent<number>(
+            connection,
+            getUpdateQuestions,
+            tCommonData.testId,
+            questionIds,
+            deleteQuestionIds,
+            'question'
+        );
+    };
+
     ///// Public /////
     public createTests = async (testsData: TTestCreation[]): Promise<TResponse> => {
         const connection = await sqlPool.getConnection();
@@ -88,6 +123,105 @@ class TestsServiceImpl implements TestsService {
             await connection.commit();
             return {
                 message: `Successfully added new tests, amount: '${promiseInserts.length}'`
+            };
+        } catch (error: unknown) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    };
+
+    public getTests = async (
+        questionIds: number[],
+        needCommonDataOnly: boolean
+    ): Promise<TPayloadResponse<Array<TTestCommon | TTest>>> => {
+        const { selectTest, selectTop10Test, selectQuestionIds } = readSql;
+
+        if (!questionIds.length) {
+            const dbTestsResponse = await sqlPool.query(selectTop10Test);
+            const [dbTests] = dbTestsResponse as any[];
+            const tests = dbTests as TTest[];
+
+            const message = !dbTests.length
+                ? 'No tests found'
+                : `Successfully got tests, amount: ${dbTests.length}`;
+
+            return {
+                message: message,
+                payload: tests
+            };
+        }
+
+        const promiseSelects: Promise<TTestCommon | TTest>[] = questionIds.map(
+            (id) =>
+                new Promise<TTestCommon | TTest>(async (resolve, reject) => {
+                    try {
+                        const dbTestResponse = await sqlPool.query(selectTest, [id]);
+                        const [[dbTest]] = dbTestResponse as any;
+                        if (!dbTest)
+                            throw new NoDataError(`Specified test, id: ${id} is not exists!`);
+                        const test = dbTest as TTest;
+
+                        if (needCommonDataOnly) {
+                            return resolve(test);
+                        }
+
+                        const dbQuestionIdsResponse = await sqlPool.query(selectQuestionIds, [id]);
+                        const [dbQuestionIds] = dbQuestionIdsResponse as any[];
+                        if (questionIds.length) {
+                            const questionIds: number[] = (
+                                dbQuestionIds as Array<TQuestionId & TTestId>
+                            ).map((id) => id.questionId);
+                            const { payload: questions } = await questionsService.getQuestions(
+                                questionIds
+                            );
+                            test.questions = questions;
+                        }
+
+                        return resolve(test);
+                    } catch (error: unknown) {
+                        return reject(error);
+                    }
+                })
+        );
+
+        const tests = (await Promise.all(promiseSelects)) as Array<TTestCommon | TTest>;
+        return {
+            message: `Successfully got tests, amount: ${promiseSelects.length}`,
+            payload: tests
+        };
+    };
+
+    public editTests = async (
+        testsData: TTestEdit[]
+    ): Promise<TPayloadResponse<Array<TTestCommon | TTest>>> => {
+        const connection = await sqlPool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const promiseUpdates: Promise<void>[] = testsData.map(
+                (tData) =>
+                    new Promise<void>(async (resolve, reject) => {
+                        try {
+                            await this._updateTest(connection, tData);
+                            return resolve();
+                        } catch (error: unknown) {
+                            return reject(error);
+                        }
+                    })
+            );
+
+            await Promise.all(promiseUpdates);
+            await connection.commit();
+            connection.release();
+
+            const { payload: updatedTests } = await this.getTests(
+                testsData.map((t) => t.testId),
+                false
+            );
+            return {
+                message: `Successfully updated tests, amount: '${promiseUpdates.length}'`,
+                payload: updatedTests
             };
         } catch (error: unknown) {
             await connection.rollback();
