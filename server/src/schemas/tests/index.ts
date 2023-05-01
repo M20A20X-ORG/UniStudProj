@@ -1,12 +1,14 @@
 import { query } from 'express-validator';
-import { creationSchema } from './creationSchema';
-import { editSchema } from './editSchema';
+import { creationPureSchema, creationSchema } from './creationSchema';
+import { editPureSchema, editSchema } from './editSchema';
 
 import { TSchemaFormats, TSchemas } from '@type/schema';
 import { PROJECT_FORMATS } from '@schemas/projects';
 
 export const TEST_SCHEMA: TSchemas = {
+    creationPureSchema,
     creationSchema,
+    editPureSchema,
     editSchema
 } as const;
 
@@ -15,9 +17,7 @@ export const TEST_FORMAT: TSchemaFormats = {
 } as const;
 
 export const TEST_QUERY = {
-    testId: query('testId', 'testId must be a number >= 1').isInt(),
     testIds: query('testIds', 'testIds must be an array of numbers >= 1')
-        .optional()
         .isArray()
         .custom((testIds: any[]) => testIds.every((elem) => !isNaN(elem) && elem >= 1))
 } as const;
