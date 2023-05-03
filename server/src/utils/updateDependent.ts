@@ -13,8 +13,7 @@ const handleError = (
     let message = '';
 
     if (code === 'ER_NO_REFERENCED_ROW_2') message = `Specified ${errNoRefStr} are not exists!`;
-    else if (code === 'ER_DUP_ENTRY')
-        message = `Specified ${errDupEntryStr} already added to this project!`;
+    else if (code === 'ER_DUP_ENTRY') message = `Specified ${errDupEntryStr} already added!`;
 
     if (message) throw new DataModificationError(message);
     throw error;

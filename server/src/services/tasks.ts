@@ -2,7 +2,7 @@ import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
 import { TDependency } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
-import { TProjectTag } from '@type/schemas/projects/project';
+import { TTag } from '@type/schemas/projects/project';
 import { TProjectTask, TTaskCreation, TTaskEdit, TTaskId } from '@type/schemas/projects/tasks';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
@@ -118,7 +118,7 @@ class TasksServiceImpl implements TasksService {
         const dbTagsResponse = await sqlPool.query(selectTags, [projectId]);
         const [dbTags] = dbTagsResponse as any[];
         if (dbTags.length) {
-            const tags = dbTags as Array<TDependency<TTaskId, TProjectTag>>;
+            const tags = dbTags as Array<TDependency<TTaskId, TTag>>;
             tasks.forEach(
                 (task) =>
                     (task.tags = tags
