@@ -1,5 +1,5 @@
 import {
-    TOption,
+    TOptionCreation,
     TOptionEdit,
     TQuestionCreation,
     TQuestionEdit
@@ -15,60 +15,70 @@ export const QUESTION_SQL = {
             WHERE question_id IN (${questionIds})`
     },
     createSql: {
-        getInsertQuestionsCommon: (questionsCommonData: Omit<TQuestionCreation, 'options'>) => {
+        getInsertQuestionsCommon: (
+            questionsCommonData: Omit<TQuestionCreation, 'options' | 'results'>
+        ) => {
             const q = questionsCommonData;
-            const value = `(${q.typeId},${q.progLangId},'${q.result}','${q.question}','${q.initValue}','${q.regexGroup}','${q.regex}')`;
+            const value = `(${q.typeId},${q.progLangId},'${q.question}','${q.initValue}','${q.regexGroup}','${q.regex}')`;
             return `
-                INSERT INTO tbl_questions(type_id, prog_lang_id, result, question, init_value, regex_group, regex)
+                INSERT INTO tbl_questions(type_id, prog_lang_id, question, init_value, regex_group, regex)
                 VALUES ${value}`;
         },
-        getInsertQuestionOptions: (questionId: number, optionsData: TOption[]) => {
+        getInsertQuestionOptions: (questionId: number, optionsData: TOptionCreation[]) => {
             const values = optionsData.map((o) => `(${questionId},'${o.text}','${o.imageUrl}')`);
             return `
                 INSERT INTO tbl_question_options(question_id, text, image_url)
                 VALUES ${values}`;
+        },
+        getInsertQuestionResults: (questionId: number, resultIds: number[]) => {
+            const values = resultIds.map((id) => `(${[questionId, id]})`);
+            return `
+                INSERT INTO tbl_question_results(question_id, option_id)
+                VALUES ${values}`;
         }
     },
     readSql: {
-        selectQuestion: `
+        getSelectQuestion: (questionId: number) => `
             SELECT q.question_id AS questionId,
                    q.init_value  AS initValue,
                    q.regex_group AS regexGroup,
                    qt.name       AS type,
                    qp.name       AS prohLang,
-                   q.result,
                    q.question,
                    q.regex
             FROM (SELECT question_id,
                          type_id,
-                         result,
                          prog_lang_id,
                          question,
                          init_value,
                          regex_group,
                          regex
                   FROM tbl_questions
-                  WHERE question_id = ?) AS q
+                  WHERE question_id = ${questionId}) AS q
                      JOIN tbl_question_types qt ON qt.type_id = q.type_id
                      JOIN tbl_question_prog_langs qp ON qp.prog_lang_id = q.prog_lang_id`,
         selectQuestionOptions: `
-            SELECT text, image_url AS imageUrl
-            FROM tbl_question_options`
+            SELECT option_id AS optionId,
+                   text,
+                   image_url AS imageUrl
+            FROM tbl_question_options
+            WHERE question_id = ?`,
+        selectQuestionResults: `
+            SELECT o.option_id   AS optionId,
+                   o.question_id AS questionId,
+                   o.text,
+                   o.image_url   AS imageUrl
+            FROM (SELECT question_id, option_id
+                  FROM tbl_question_results
+                  WHERE question_id = ?) AS r
+                     JOIN tbl_question_options o ON o.option_id = r.option_id`
     },
     updateSql: {
         getUpdateQuestionCommon: (
             questionData: Omit<TQuestionEdit, 'options' | 'deleteOptionIds'>
         ) => {
-            const {
-                questionId,
-                question,
-                typeId,
-                regexGroup,
-                regex,
-                result,
-                progLangId,
-                initValue
-            } = questionData;
+            const { questionId, question, typeId, regexGroup, regex, progLangId, initValue } =
+                questionData;
 
             const vales = concat([
                 typeId ? 'type_id = ' + typeId : '',
@@ -76,7 +86,6 @@ export const QUESTION_SQL = {
                 regexGroup !== undefined ? "regex_group = '" + regexGroup.trim() + "'" : '',
                 regex !== undefined ? "regex = '" + regex.trim() + "'" : '',
                 initValue !== undefined ? "init_value = '" + initValue.trim() + "'" : '',
-                result ? "result = '" + result.trim() + "'" : '',
                 question ? "question = '" + question.trim() + "'" : ''
             ]);
 
@@ -120,6 +129,24 @@ export const QUESTION_SQL = {
                   WHERE option_id IN (${deleteOptionIds})`;
 
             return [updateSql, deleteSql];
+        },
+        getUpdateResults: (
+            questionId: number,
+            resultIds: number[] | undefined,
+            deleteResultIds: number[] | undefined
+        ): TUpdateDependentSql => {
+            const createSql = resultIds && [
+                QUESTION_SQL.createSql.getInsertQuestionResults(questionId, resultIds)
+            ];
+
+            const deleteSql =
+                deleteResultIds &&
+                `
+                  DELETE
+                  FROM tbl_question_results
+                  WHERE question_id = ${questionId}`;
+
+            return [createSql, deleteSql];
         }
     }
 };

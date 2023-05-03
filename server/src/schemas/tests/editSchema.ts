@@ -13,6 +13,7 @@ export const editPureSchema: TEditPureSchema = {
         timeLimit: { type: 'integer', minimum: 30, nullable: true },
         dateStart: { type: 'string', nullable: true },
         dateEnd: { type: 'string', nullable: true },
+        passingScore: { type: 'number', minimum: 0, nullable: true },
         questionIds: {
             type: 'array',
             items: { type: 'integer', minimum: 1 } as any,

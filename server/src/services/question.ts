@@ -4,6 +4,7 @@ import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import {
     TOption,
     TOptionEdit,
+    TOptionId,
     TQuestion,
     TQuestionCreation,
     TQuestionEdit,
@@ -26,7 +27,10 @@ const { getSelectLastInsertId } = COMMON_SQL;
 interface QuestionsService {
     deleteQuestions: (questionIds: number[]) => Promise<TResponse>;
     createQuestions: (questionsData: TQuestionCreation[]) => Promise<TResponse>;
-    getQuestions: (questionsIds: number[]) => Promise<TPayloadResponse<TQuestion[]>>;
+    getQuestions: (
+        questionsIds: number[],
+        needResults: boolean
+    ) => Promise<TPayloadResponse<TQuestion[]>>;
     editQuestions: (questionsData: TQuestionEdit[]) => Promise<TPayloadResponse<TQuestion[]>>;
 }
 
@@ -36,10 +40,19 @@ class QuestionsServiceImpl implements QuestionsService {
         connection: PoolConnection,
         questionData: TQuestionCreation
     ) => {
-        const { getInsertQuestionsCommon, getInsertQuestionOptions } = createSql;
+        const { getInsertQuestionsCommon, getInsertQuestionOptions, getInsertQuestionResults } =
+            createSql;
+        const { options, results, ...qCommonData } = questionData;
 
-        const { options, ...qCommonData } = questionData;
-        if (options.length < 2) throw new DataAddingError('Question must have at least 2 options!');
+        results.forEach((r) => {
+            const isResultsRespectOptions = options.find(
+                (o) => o.text === r.text && o.imageUrl === r.imageUrl
+            );
+            if (!isResultsRespectOptions)
+                throw new DataAddingError(
+                    `Result: '${JSON.stringify(r)}' are not respects provided options!`
+                );
+        });
 
         try {
             const insertQuestionsCommonSql = getInsertQuestionsCommon(qCommonData);
@@ -61,11 +74,23 @@ class QuestionsServiceImpl implements QuestionsService {
 
         const insertOptionsSql = getInsertQuestionOptions(questionId, options);
         await connection.query(insertOptionsSql);
+
+        const getSelectOptionLIId = getSelectLastInsertId('optionId');
+        const dbNewOptionIdResponse = await connection.query(getSelectOptionLIId);
+        const [[dbNewOptionId]] = dbNewOptionIdResponse as any;
+        if (!dbNewOptionId) throw new DataAddingError('Error adding new option!');
+        const { optionId: optionLIId } = dbNewOptionId as TOptionId;
+
+        const resultIds: number[] = new Array(results.length)
+            .fill(null)
+            .map((_, id) => optionLIId - id);
+        const insertQuestionResults = getInsertQuestionResults(questionId, resultIds);
+        await connection.query(insertQuestionResults);
     };
 
     private _updateQuestion = async (connection: PoolConnection, questionData: TQuestionEdit) => {
-        const { getUpdateQuestionCommon, getUpdateOptions } = updateSql;
-        const { options, deleteOptionIds, ...qCommonData } = questionData;
+        const { getUpdateQuestionCommon, getUpdateOptions, getUpdateResults } = updateSql;
+        const { options, resultIds, deleteOptionIds, ...qCommonData } = questionData;
 
         try {
             const updateQuestionCommonSql = getUpdateQuestionCommon(qCommonData);
@@ -78,6 +103,7 @@ class QuestionsServiceImpl implements QuestionsService {
                 );
             throw error;
         }
+
         await updateDependent<TOptionEdit>(
             connection,
             getUpdateOptions,
@@ -86,6 +112,17 @@ class QuestionsServiceImpl implements QuestionsService {
             deleteOptionIds,
             'option'
         );
+
+        if (resultIds?.length) {
+            await updateDependent<number>(
+                connection,
+                getUpdateResults,
+                qCommonData.questionId,
+                resultIds,
+                [],
+                'option'
+            );
+        }
     };
 
     ///// Public /////
@@ -131,14 +168,18 @@ class QuestionsServiceImpl implements QuestionsService {
         }
     };
 
-    public getQuestions = async (questionIds: number[]): Promise<TPayloadResponse<TQuestion[]>> => {
-        const { selectQuestion, selectQuestionOptions } = readSql;
+    public getQuestions = async (
+        questionIds: number[],
+        needResults: boolean
+    ): Promise<TPayloadResponse<TQuestion[]>> => {
+        const { getSelectQuestion, selectQuestionOptions, selectQuestionResults } = readSql;
 
         const promiseSelects: Promise<TQuestion>[] = questionIds.map(
             (id) =>
                 new Promise<TQuestion>(async (resolve, reject) => {
                     try {
-                        const dbQuestionResponse = await sqlPool.query(selectQuestion, [id]);
+                        const selectQuestion = getSelectQuestion(id);
+                        const dbQuestionResponse = await sqlPool.query(selectQuestion);
                         const [[dbQuestion]] = dbQuestionResponse as any;
                         if (!dbQuestion)
                             throw new NoDataError(`Specified question, id: ${id} is not exists!`);
@@ -147,6 +188,14 @@ class QuestionsServiceImpl implements QuestionsService {
                         const dbOptionsResponse = await sqlPool.query(selectQuestionOptions, [id]);
                         const [dbOptions] = dbOptionsResponse as any[];
                         if (dbOptions.length) question.options = dbOptions as TOption[];
+
+                        if (needResults) {
+                            const dbResultsResponse = await sqlPool.query(selectQuestionResults, [
+                                id
+                            ]);
+                            const [dbResults] = dbResultsResponse as any[];
+                            if (dbResults.length) question.result = dbResults as TOption[];
+                        }
 
                         return resolve(question);
                     } catch (error: unknown) {
@@ -184,9 +233,8 @@ class QuestionsServiceImpl implements QuestionsService {
             await connection.commit();
             connection.release();
 
-            const { payload: updatedQuestions } = await this.getQuestions(
-                questionsData.map((q) => q.questionId)
-            );
+            const questionIds = questionsData.map((q) => q.questionId);
+            const { payload: updatedQuestions } = await this.getQuestions(questionIds, true);
             return {
                 message: `Successfully updated questions, amount: '${promiseUpdates.length}'`,
                 payload: updatedQuestions

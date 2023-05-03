@@ -13,6 +13,7 @@ export const creationPureSchema: TCreationPureSchema = {
         timeLimit: { type: 'integer', minimum: 30 },
         dateStart: { type: 'string' },
         dateEnd: { type: 'string' },
+        passingScore: { type: 'number', minimum: 0 },
         questionIds: {
             type: 'array',
             items: { type: 'integer', minimum: 1 } as any,
@@ -21,7 +22,7 @@ export const creationPureSchema: TCreationPureSchema = {
         }
     },
     additionalProperties: false,
-    required: ['projectId', 'name', 'dateStart', 'dateEnd', 'questionIds']
+    required: ['projectId', 'name', 'dateStart', 'dateEnd', 'passingScore', 'questionIds']
 };
 
 export const creationSchema: TCreationSchema = {

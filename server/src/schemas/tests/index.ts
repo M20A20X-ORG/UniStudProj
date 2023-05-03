@@ -1,15 +1,27 @@
 import { query } from 'express-validator';
+
 import { creationPureSchema, creationSchema } from './creationSchema';
 import { editPureSchema, editSchema } from './editSchema';
+import { testCompletedSchema } from './testCompletedSchema';
+import {
+    userNeedTestPureSchema,
+    userNeedTestSchema,
+    usersNeedTestsSchema
+} from './usersNeedTestsSchema';
 
 import { TSchemaFormats, TSchemas } from '@type/schema';
+
 import { PROJECT_FORMATS } from '@schemas/projects';
 
 export const TEST_SCHEMA: TSchemas = {
     creationPureSchema,
     creationSchema,
     editPureSchema,
-    editSchema
+    editSchema,
+    userNeedTestPureSchema,
+    userNeedTestSchema,
+    usersNeedTestsSchema,
+    testCompletedSchema
 } as const;
 
 export const TEST_FORMAT: TSchemaFormats = {

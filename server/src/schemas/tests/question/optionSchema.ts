@@ -1,10 +1,10 @@
 import { JSONSchemaType } from 'ajv';
-import { TOption, TOptionEdit } from '@type/schemas/tests/question';
+import { TOptionCreation, TOptionEdit } from '@type/schemas/tests/question';
 
-type projectParticipant = JSONSchemaType<TOption>;
-type projectParticipantEdit = JSONSchemaType<TOptionEdit>;
+type TOptionSchema = JSONSchemaType<TOptionCreation>;
+type TOptionEditSchema = JSONSchemaType<TOptionEdit>;
 
-export const optionSchema: projectParticipant = {
+export const optionSchema: TOptionSchema = {
     $id: 'http://example.com/schemas/test/question/option',
     type: 'object',
     properties: {
@@ -15,7 +15,7 @@ export const optionSchema: projectParticipant = {
     required: ['text']
 };
 
-export const optionSchemaEdit: projectParticipantEdit = {
+export const optionSchemaEdit: TOptionEditSchema = {
     $id: 'http://example.com/schemas/test/question/option-edit',
     type: 'object',
     properties: {

@@ -27,7 +27,7 @@ router.post(
 );
 router.get(
     '/get',
-    ...requireQueryValidator(QUESTION_QUERY.questionIds),
+    ...requireQueryValidator(QUESTION_QUERY.questionIds, QUESTION_QUERY.needResults),
     requireAuth([admin, user]),
     questionsController.getGetQuestions
 );

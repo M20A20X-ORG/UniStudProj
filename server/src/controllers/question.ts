@@ -49,9 +49,10 @@ class QuestionsControllerImpl implements QuestionsController {
     public getGetQuestions: RequestHandler = async (req, res) => {
         try {
             const questionIdsParam = req.query.questionIds as string[];
+            const needResults = (req.query.needResults as string) === 'true';
             const questionIds = questionIdsParam.map((idStr) => parseInt(idStr));
 
-            const serviceResponse = await questionsService.getQuestions(questionIds);
+            const serviceResponse = await questionsService.getQuestions(questionIds, needResults);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;

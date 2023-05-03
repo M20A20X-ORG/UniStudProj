@@ -7,8 +7,9 @@ CREATE TABLE `tbl_tests`
     `name`             VARCHAR(30) NOT NULL,
     `time_limit`       INT         NOT NULL,
     `questions_amount` INT         NOT NULL,
-    `date_start`       DATE        NULL,
-    `date_end`         DATE        NULL,
+    `date_start`       DATETIME    NULL,
+    `date_end`         DATETIME    NULL,
+    `passing_score`    INT         NOT NULL,
     CONSTRAINT `tests_PK_test_id` PRIMARY KEY (`test_id`),
     CONSTRAINT `users_UQ_name` UNIQUE (`name`)
 );

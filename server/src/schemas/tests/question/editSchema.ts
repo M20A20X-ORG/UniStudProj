@@ -14,11 +14,17 @@ export const editPureSchema: TEditPureSchema = {
         options: {
             type: 'array',
             items: { $ref: '/schemas/test/question/option-edit' } as any,
-            minItems: 0,
+            minItems: 2,
             maxItems: 50,
             nullable: true
         },
-        result: { type: 'string', nullable: true },
+        resultIds: {
+            type: 'array',
+            items: { type: 'integer', minimum: 1 } as any,
+            minItems: 1,
+            maxItems: 50,
+            nullable: true
+        },
         initValue: { type: 'string', nullable: true },
         progLangId: { type: 'integer', minimum: 1, nullable: true },
         regex: { type: 'string', nullable: true },
@@ -29,7 +35,8 @@ export const editPureSchema: TEditPureSchema = {
             minItems: 0,
             maxItems: 50,
             nullable: true
-        }
+        },
+        score: { type: 'number', minimum: 0, nullable: true }
     },
     additionalProperties: false,
     required: ['questionId']

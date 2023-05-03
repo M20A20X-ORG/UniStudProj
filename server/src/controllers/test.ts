@@ -4,12 +4,13 @@ import { TTestCreation, TTestEdit, TTestsJson } from '@type/schemas/tests/test';
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
 import { testsService } from '@services/test';
-import { DataModificationError } from '@exceptions/DataModificationError';
 
 interface TestsController {
+    ///// CRUD /////
     postCreateTests: RequestHandler;
     getGetTests: RequestHandler;
     putEditTests: RequestHandler;
@@ -17,6 +18,7 @@ interface TestsController {
 }
 
 class TestsControllerImpl implements TestsController {
+    ///// CRUD /////
     public postCreateTests: RequestHandler = async (req, res) => {
         try {
             const { tests } = req.body as TTestsJson<TTestCreation[]>;
@@ -32,15 +34,16 @@ class TestsControllerImpl implements TestsController {
 
     public getGetTests: RequestHandler = async (req, res) => {
         try {
+            const needCommonDataOnly = (req.query.needCommonDataOnly as string) === 'true';
+            const needResults = (req.query.needResults as string) === 'true';
             const testIdsParam = (req.query.testIds as string[]) ?? [];
-            const needCommonDataOnlyParam = req.query.needCommonDataOnly as string;
-
             const testIds = testIdsParam.map((idStr) => parseInt(idStr));
-            const needCommonDataOnly = needCommonDataOnlyParam
-                ? needCommonDataOnlyParam === 'true'
-                : false;
 
-            const serviceResponse = await testsService.getTests(testIds, needCommonDataOnly);
+            const serviceResponse = await testsService.getTests(
+                testIds,
+                needCommonDataOnly,
+                needResults
+            );
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;

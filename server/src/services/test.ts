@@ -3,7 +3,8 @@ import { PoolConnection } from 'mysql2/promise';
 
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import { TTest, TTestCreation, TTestEdit, TTestId } from '@type/schemas/tests/test';
-import { TQuestionId } from '@type/schemas/tests/question';
+import { TQuestionId, TQuestionMarked } from '@type/schemas/tests/question';
+import { TProjectId } from '@type/schemas/projects/project';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { NoDataError } from '@exceptions/NoDataError';
@@ -11,22 +12,24 @@ import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { TEST_SQL } from '@static/sql/test';
 import { COMMON_SQL } from '@static/sql/common';
+import { TEST_DATE_DIFF_DEFAULT } from '@static/common';
 
 import { sqlPool } from '@configs/sqlPool';
-import { questionsService } from '@services/question';
 import { updateDependent } from '@utils/updateDependent';
-import { TProjectId } from '@type/schemas/projects/project';
+import { questionsService } from '@services/question';
+
+type TTestCommon = Omit<TTest, 'questions'>;
 
 const { createSql, deleteSql, readSql, updateSql } = TEST_SQL;
 const { getSelectLastInsertId } = COMMON_SQL;
 
-type TTestCommon = Omit<TTest, 'questions'>;
-
 interface TestsService {
+    ///// CRUD /////
     createTests: (testData: TTestCreation[]) => Promise<TResponse>;
     getTests: (
         testIds: number[],
-        needCommonDataOnly: boolean
+        needCommonDataOnly: boolean,
+        needResults: boolean
     ) => Promise<TPayloadResponse<Array<TTestCommon | TTest>>>;
     editTests: (testsData: TTestEdit[]) => Promise<TPayloadResponse<Array<TTestCommon | TTest>>>;
     deleteTests: (testIds: number[]) => Promise<TResponse>;
@@ -34,7 +37,11 @@ interface TestsService {
 
 class TestsServiceImpl implements TestsService {
     ///// Private /////
-    private _insertTest = async (connection: PoolConnection, testData: TTestCreation) => {
+    ///// CRUD /////
+    private _insertTest = async (
+        connection: PoolConnection,
+        testData: TTestCreation
+    ): Promise<void> => {
         const { getInsertTestCommon, getInsertQuestionsOfTests } = createSql;
         const { questionIds, ...questionCommonData } = testData;
 
@@ -42,6 +49,17 @@ class TestsServiceImpl implements TestsService {
         if (questionsAmount < 1) throw new DataAddingError('Test must have at least 1 question!');
 
         try {
+            const { dateStart, dateEnd } = questionCommonData;
+            const isDateEndInvalid =
+                new Date(dateStart).getTime() >
+                new Date(dateEnd).getTime() - TEST_DATE_DIFF_DEFAULT;
+            if (isDateEndInvalid) {
+                const minutes = ((0.0001 * TEST_DATE_DIFF_DEFAULT) / 6).toFixed(0);
+                throw new DataAddingError(
+                    `dateEnd must be greater than dateStart at least on ${minutes} minutes!`
+                );
+            }
+
             const insertTestCommonSql = getInsertTestCommon({
                 ...questionCommonData,
                 questionsAmount
@@ -77,7 +95,10 @@ class TestsServiceImpl implements TestsService {
         }
     };
 
-    private _updateTest = async (connection: PoolConnection, testData: TTestEdit) => {
+    private _updateTest = async (
+        connection: PoolConnection,
+        testData: TTestEdit
+    ): Promise<void> => {
         const { getUpdateTestCommon, getUpdateQuestions } = updateSql;
         const { questionIds, deleteQuestionIds, ...tCommonData } = testData;
 
@@ -101,8 +122,38 @@ class TestsServiceImpl implements TestsService {
             'question'
         );
     };
+    ///// Interaction /////
+    private _countScore = async (questionsMarked: TQuestionMarked[]): Promise<number> => {
+        const questionMarkedIds: number[] = questionsMarked.map((q) => q.questionId);
+        const { payload: questionsResults } = await questionsService.getQuestions(
+            questionMarkedIds,
+            true
+        );
+
+        return questionsMarked.reduce((score, qm) => {
+            const questionWithResult = questionsResults.find(
+                (qr) => qr.questionId === qm.questionId
+            );
+
+            if (!questionWithResult) return score;
+
+            const { options, result } = questionWithResult;
+            const { optionIds } = qm;
+
+            const isAllMarkedLessCorrect =
+                optionIds.length === options.length && options.length > result.length;
+            if (isAllMarkedLessCorrect) return score;
+
+            const coincidesAmount = questionWithResult.result.reduce(
+                (amount, { optionId }) => amount + (optionIds.includes(optionId) ? 1 : 0),
+                0
+            );
+            return score + questionWithResult.score * 0.01 * coincidesAmount;
+        }, 0);
+    };
 
     ///// Public /////
+    ///// CRUD /////
     public createTests = async (testsData: TTestCreation[]): Promise<TResponse> => {
         const { getInsertTestsOfProjects } = createSql;
 
@@ -133,7 +184,7 @@ class TestsServiceImpl implements TestsService {
             const testsOfProjects: Array<TProjectId & TTestId> = Array(testsAmount)
                 .fill(null)
                 .map((_, id) => ({
-                    testId: testId - testsAmount + id,
+                    testId: testId - testsAmount + id + 1,
                     projectId: testsData[id].projectId
                 }));
             const insertTestsOfProjects = getInsertTestsOfProjects(testsOfProjects);
@@ -152,13 +203,15 @@ class TestsServiceImpl implements TestsService {
     };
 
     public getTests = async (
-        questionIds: number[],
-        needCommonDataOnly: boolean
+        testIds: number[],
+        needCommonDataOnly: boolean,
+        needResults: boolean
     ): Promise<TPayloadResponse<Array<TTestCommon | TTest>>> => {
-        const { selectTest, selectTop10Test, selectQuestionIds } = readSql;
+        const { getSelectTest, selectQuestionIds } = readSql;
 
-        if (!questionIds.length) {
-            const dbTestsResponse = await sqlPool.query(selectTop10Test);
+        if (!testIds.length) {
+            const selectTestSql = getSelectTest(false);
+            const dbTestsResponse = await sqlPool.query(selectTestSql);
             const [dbTests] = dbTestsResponse as any[];
             const tests = dbTests as TTest[];
 
@@ -172,11 +225,12 @@ class TestsServiceImpl implements TestsService {
             };
         }
 
-        const promiseSelects: Promise<TTestCommon | TTest>[] = questionIds.map(
+        const promiseSelects: Promise<TTestCommon | TTest>[] = testIds.map(
             (id) =>
                 new Promise<TTestCommon | TTest>(async (resolve, reject) => {
                     try {
-                        const dbTestResponse = await sqlPool.query(selectTest, [id]);
+                        const selectTestSql = getSelectTest();
+                        const dbTestResponse = await sqlPool.query(selectTestSql, [id]);
                         const [[dbTest]] = dbTestResponse as any;
                         if (!dbTest)
                             throw new NoDataError(`Specified test, id: ${id} is not exists!`);
@@ -188,12 +242,13 @@ class TestsServiceImpl implements TestsService {
 
                         const dbQuestionIdsResponse = await sqlPool.query(selectQuestionIds, [id]);
                         const [dbQuestionIds] = dbQuestionIdsResponse as any[];
-                        if (questionIds.length) {
+                        if (testIds.length) {
                             const questionIds: number[] = (
                                 dbQuestionIds as Array<TQuestionId & TTestId>
                             ).map((id) => id.questionId);
                             const { payload: questions } = await questionsService.getQuestions(
-                                questionIds
+                                questionIds,
+                                needResults
                             );
                             test.questions = questions;
                         }
@@ -234,13 +289,11 @@ class TestsServiceImpl implements TestsService {
             await connection.commit();
             connection.release();
 
-            const { payload: updatedTests } = await this.getTests(
-                testsData.map((t) => t.testId),
-                false
-            );
+            const testIds = testsData.map((t) => t.testId);
+            const { payload: updatedTests } = await this.getTests(testIds, false, true);
             return {
                 message: `Successfully updated tests, amount: '${promiseUpdates.length}'`,
-                payload: updatedTests
+                payload: updatedTests as TTest[]
             };
         } catch (error: unknown) {
             await connection.rollback();

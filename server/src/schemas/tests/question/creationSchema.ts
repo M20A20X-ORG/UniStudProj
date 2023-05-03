@@ -16,14 +16,20 @@ export const creationPureSchema: TCreationPureSchema = {
             minItems: 0,
             maxItems: 50
         },
-        result: { type: 'string' },
+        results: {
+            type: 'array',
+            items: { $ref: '/schemas/test/question/option' } as any,
+            minItems: 0,
+            maxItems: 50
+        },
         initValue: { type: 'string', nullable: true },
         progLangId: { type: 'integer', minimum: 1, nullable: true },
         regex: { type: 'string', nullable: true },
-        regexGroup: { type: 'string', nullable: true }
+        regexGroup: { type: 'string', nullable: true },
+        score: { type: 'number', minimum: 0 }
     },
     additionalProperties: false,
-    required: ['typeId', 'question', 'options', 'result']
+    required: ['typeId', 'question', 'options', 'results', 'score']
 };
 
 export const creationSchema: TCreationSchema = {

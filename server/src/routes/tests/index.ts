@@ -41,8 +41,6 @@ router.delete(
     testsController.deleteTests
 );
 
-///// Usage /////
-
 router.use('/questions', questionsRouter);
 
 export const testsRouter = router;
