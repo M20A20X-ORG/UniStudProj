@@ -18,7 +18,7 @@ export const USER_FORMAT: TSchemaFormats = {
     userEmail: /^[a-z\d]+@[a-z\d]+.[a-z\d]+$/
 } as const;
 
-export const USER_QUERY: TQueryValidators = {
+export const USER_QUERY = {
     userId: check('userIdentifiers')
         .isArray()
         .withMessage(
