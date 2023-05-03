@@ -17,7 +17,7 @@ export const requireSchemaValidator = (schema: string): RequestHandler => {
             const { params, keyword, instancePath } = error;
 
             let errMessage = error.message ?? '';
-            if (keyword === 'required' || keyword === 'type')
+            if (keyword === 'required' || keyword === 'type' || keyword === 'minItems')
                 errMessage = `'${instancePath}' ${error.message}`;
             else if (keyword === 'format')
                 errMessage = `'${instancePath}' must match format: '${ajv.formats[params.format]}'`;
