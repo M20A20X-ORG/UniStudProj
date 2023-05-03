@@ -1,5 +1,11 @@
 import { RequestHandler } from 'express';
-import { TTestCreation, TTestEdit, TTestsJson } from '@type/schemas/tests/test';
+import {
+    TTestCompleted,
+    TTestCreation,
+    TTestEdit,
+    TTestsJson,
+    TUserNeedTest
+} from '@type/schemas/tests/test';
 
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { DataAddingError } from '@exceptions/DataAddingError';
@@ -15,6 +21,12 @@ interface TestsController {
     getGetTests: RequestHandler;
     putEditTests: RequestHandler;
     deleteTests: RequestHandler;
+    ///// Interaction /////
+    postAddTestsForUsers: RequestHandler;
+    putStartTest: RequestHandler;
+    putCompleteTest: RequestHandler;
+    getTestsResults: RequestHandler;
+    postDeleteTestsForUsers: RequestHandler;
 }
 
 class TestsControllerImpl implements TestsController {
@@ -74,6 +86,74 @@ class TestsControllerImpl implements TestsController {
             const testIds = testIdsParam.map((idStr) => parseInt(idStr));
 
             const serviceResponse = await testsService.deleteTests(testIds);
+            return res.status(200).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof DataDeletionError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
+    ///// Interaction /////
+    public postAddTestsForUsers: RequestHandler = async (req, res) => {
+        try {
+            const { tests } = req.body as TTestsJson<TUserNeedTest[]>;
+            const serviceResponse = await testsService.addTestsForUsers(tests);
+            return res.status(201).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof DataAddingError) responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
+    public putStartTest: RequestHandler = async (req, res) => {
+        try {
+            const { tests } = req.body as TTestsJson<TUserNeedTest>;
+            const serviceResponse = await testsService.startTest(tests);
+            return res.status(200).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof DataModificationError || error instanceof NoDataError)
+                responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
+    public putCompleteTest: RequestHandler = async (req, res) => {
+        try {
+            const { tests } = req.body as TTestsJson<TTestCompleted>;
+            const serviceResponse = await testsService.completeTest(tests);
+            return res.status(200).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof DataAddingError || error instanceof NoDataError)
+                responseStatus = 409;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
+    public getTestsResults: RequestHandler = async (req, res) => {
+        try {
+            const { tests } = req.body as TTestsJson<TUserNeedTest[]>;
+            const serviceResponse = await testsService.getResults(tests);
+            return res.status(200).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            let responseStatus = 500;
+            if (error instanceof NoDataError) responseStatus = 404;
+            return sendResponse(res, responseStatus, message, stack);
+        }
+    };
+
+    public postDeleteTestsForUsers: RequestHandler = async (req, res) => {
+        try {
+            const { tests } = req.body as TTestsJson<TUserNeedTest[]>;
+            const serviceResponse = await testsService.deleteTestsForUsers(tests);
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;

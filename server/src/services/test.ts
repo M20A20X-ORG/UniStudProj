@@ -2,8 +2,16 @@ import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
 
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
-import { TTest, TTestCreation, TTestEdit, TTestId } from '@type/schemas/tests/test';
-import { TQuestionId, TQuestionMarked } from '@type/schemas/tests/question';
+import {
+    TTest,
+    TTestCompleted,
+    TTestCreation,
+    TTestEdit,
+    TTestId,
+    TUserNeedTest,
+    TUsersNeedTests
+} from '@type/schemas/tests/test';
+import { TQuestionId, TQuestionMarked, TQuestionPublic } from '@type/schemas/tests/question';
 import { TProjectId } from '@type/schemas/projects/project';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
@@ -12,15 +20,17 @@ import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { TEST_SQL } from '@static/sql/test';
 import { COMMON_SQL } from '@static/sql/common';
-import { TEST_DATE_DIFF_DEFAULT } from '@static/common';
 
 import { sqlPool } from '@configs/sqlPool';
 import { updateDependent } from '@utils/updateDependent';
 import { questionsService } from '@services/question';
+import { TEST_DATE_DIFF_DEFAULT } from '@static/common';
+import { DataDeletionError } from '@exceptions/DataDeletionError';
 
 type TTestCommon = Omit<TTest, 'questions'>;
+type TStartTestPayload = { timeLeft: number } | TTest<TQuestionPublic>;
 
-const { createSql, deleteSql, readSql, updateSql } = TEST_SQL;
+const { createSql, deleteSql, readSql, updateSql, interactSql } = TEST_SQL;
 const { getSelectLastInsertId } = COMMON_SQL;
 
 interface TestsService {
@@ -33,6 +43,16 @@ interface TestsService {
     ) => Promise<TPayloadResponse<Array<TTestCommon | TTest>>>;
     editTests: (testsData: TTestEdit[]) => Promise<TPayloadResponse<Array<TTestCommon | TTest>>>;
     deleteTests: (testIds: number[]) => Promise<TResponse>;
+    ///// Interaction /////
+    addTestsForUsers: (usersNeedTests: TUserNeedTest[]) => Promise<TResponse>;
+    deleteTestsForUsers: (usersNeedTests: TUserNeedTest[]) => Promise<TResponse>;
+    startTest: (
+        userNeedTest: TUserNeedTest
+    ) => Promise<TResponse | TPayloadResponse<TStartTestPayload>>;
+    completeTest: (
+        testCompleted: TTestCompleted
+    ) => Promise<TResponse | TPayloadResponse<TUsersNeedTests>>;
+    getResults: (userNeedTest: TUserNeedTest[]) => Promise<TPayloadResponse<TUsersNeedTests[]>>;
 }
 
 class TestsServiceImpl implements TestsService {
@@ -315,6 +335,202 @@ class TestsServiceImpl implements TestsService {
             message = `One or few specified tests from 'testIds' are not exists`;
 
         return { message };
+    };
+
+    ///// Interaction /////
+    public addTestsForUsers = async (usersNeedTests: TUserNeedTest[]): Promise<TResponse> => {
+        const { getInsertUsersNeedTests } = interactSql;
+
+        try {
+            const insertUsersNeedTests = getInsertUsersNeedTests(usersNeedTests);
+            await sqlPool.query(insertUsersNeedTests);
+            return {
+                message: `Successfully add tests for specified users, amount: '${usersNeedTests.length}'`
+            };
+        } catch (error: unknown) {
+            const { code } = error as QueryError;
+            if (code === 'ER_NO_REFERENCED_ROW_2')
+                throw new DataAddingError(`Specified user, project or test are not exists!`);
+            if (code === 'ER_DUP_ENTRY')
+                throw new DataAddingError(`Specified test already added to user of this project!`);
+            throw error;
+        }
+    };
+
+    public deleteTestsForUsers = async (usersNeedTests: TUserNeedTest[]): Promise<TResponse> => {
+        const { getDeleteUsersNeedTests } = interactSql;
+
+        const connection = await sqlPool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const promiseDeletes: Promise<void>[] = usersNeedTests.map(
+                (u) =>
+                    new Promise<void>(async (resolve, reject) => {
+                        try {
+                            const deleteUsersNeedTests = getDeleteUsersNeedTests(u);
+                            await connection.query(deleteUsersNeedTests);
+                            return resolve();
+                        } catch (error: unknown) {
+                            return reject(error);
+                        }
+                    })
+            );
+            await Promise.all(promiseDeletes);
+            await connection.commit();
+            return {
+                message: `Successfully delete tests for specified users, amount: '${promiseDeletes.length}'`
+            };
+        } catch (error: unknown) {
+            await connection.rollback();
+            const { code } = error as QueryError;
+            if (code === 'ER_NO_REFERENCED_ROW_2')
+                throw new DataDeletionError(`Specified user, project or test are not exists!`);
+            if (code === 'ER_DUP_ENTRY')
+                throw new DataDeletionError(
+                    `Specified test already added to user of this project!`
+                );
+            throw error;
+        } finally {
+            connection.release();
+        }
+    };
+
+    public startTest = async (
+        userNeedTest: TUserNeedTest
+    ): Promise<TResponse | TPayloadResponse<TStartTestPayload>> => {
+        const { getUpdateUsersNeedTests } = interactSql;
+        const { testId, userId } = userNeedTest;
+
+        try {
+            const {
+                payload: [{ state, dateStarted }]
+            } = await this.getResults([userNeedTest]);
+
+            if (state === 'TEST_COMPLETED') {
+                return {
+                    message: `Test, id: ${userId} for user, id: ${userId} is already completed!`
+                };
+            }
+
+            const {
+                payload: [testDataResp]
+            } = await this.getTests([testId], false, false);
+            const testData = testDataResp as TTest<TQuestionPublic>;
+            const { timeLimit, dateStart, dateEnd } = testData;
+
+            const dateNow = new Date();
+            const dateNowTime = dateNow.getTime();
+            if (dateStart || dateEnd) {
+                const isTestNotOpened = new Date(dateStart).getTime() > dateNowTime;
+                if (isTestNotOpened) return { message: `Test are not opened yet` };
+
+                const isTestClosed = new Date(dateEnd).getTime() < dateNowTime;
+                if (isTestClosed) return { message: `Test are closed` };
+            }
+
+            const isStarted =
+                new Date(dateStarted).getTime() < dateNowTime && state === 'TEST_STARTED';
+            if (isStarted) {
+                const timeLeft = new Date(dateStarted).getTime() + timeLimit - dateNowTime;
+                return {
+                    message: `Test, id: ${testId} for user, id: ${userId} already started!`,
+                    payload: { timeLeft }
+                };
+            }
+
+            const insertUsersNeedTests = getUpdateUsersNeedTests({
+                ...userNeedTest,
+                state: 'TEST_STARTED',
+                dateStarted: dateNow.toISOString().slice(0, -5).replace('T', ' ')
+            });
+            await sqlPool.query(insertUsersNeedTests);
+
+            return {
+                message: `Successfully started test for specified user`,
+                payload: testData
+            };
+        } catch (error: unknown) {
+            const { code } = error as QueryError;
+            if (code === 'ER_NO_REFERENCED_ROW_2')
+                throw new DataModificationError('Specified user, test or project are not exists!');
+            if (code === 'ER_DUP_ENTRY')
+                throw new DataModificationError(
+                    "Specified user already started this project's test!"
+                );
+            throw error;
+        }
+    };
+
+    public completeTest = async (
+        testCompleted: TTestCompleted
+    ): Promise<TResponse | TPayloadResponse<TUsersNeedTests>> => {
+        const { getUpdateUsersNeedTests } = interactSql;
+        const { testId, projectId, userId, dateCompleted, answers } = testCompleted;
+
+        const {
+            payload: [{ state }]
+        } = await this.getResults([{ testId, projectId, userId }]);
+        if (state === 'TEST_COMPLETED')
+            return {
+                message: `Specified test, id: ${testId} for user, id: ${userId} already completed `
+            };
+        else if (state !== 'TEST_STARTED')
+            return {
+                message: `Specified test, id: ${testId} for user, id: ${userId} was not started before`
+            };
+
+        const score = await this._countScore(answers);
+
+        const updateUsersNeedTestsSql = getUpdateUsersNeedTests({
+            dateCompleted,
+            testId,
+            projectId,
+            userId,
+            score,
+            state: 'TEST_COMPLETED'
+        });
+        await sqlPool.query(updateUsersNeedTestsSql);
+
+        const {
+            payload: [testResult]
+        } = await this.getResults([{ testId, projectId, userId }]);
+
+        return {
+            message: 'Successfully completed test',
+            payload: testResult
+        };
+    };
+
+    public getResults = async (
+        usersNeedTests: TUserNeedTest[]
+    ): Promise<TPayloadResponse<TUsersNeedTests[]>> => {
+        const { getSelectUsersNeedTests } = interactSql;
+
+        const promiseSelects: Promise<TUsersNeedTests>[] = usersNeedTests.map(
+            (u) =>
+                new Promise<TUsersNeedTests>(async (resolve, reject) => {
+                    try {
+                        const selectUsersNeedTestsSql = getSelectUsersNeedTests(u);
+                        const dbUsersNeedTestsResponse = await sqlPool.query(
+                            selectUsersNeedTestsSql
+                        );
+                        const [[dbUsersNeedTests]] = dbUsersNeedTestsResponse as any;
+                        if (!dbUsersNeedTests)
+                            throw new NoDataError(`No required test found for specified user`);
+
+                        const userTestResult = dbUsersNeedTests as TUsersNeedTests;
+                        return resolve(userTestResult);
+                    } catch (error: unknown) {
+                        return reject(error);
+                    }
+                })
+        );
+
+        const testResults = await Promise.all(promiseSelects);
+        return {
+            message: `Successfully got tests results`,
+            payload: testResults
+        };
     };
 }
 

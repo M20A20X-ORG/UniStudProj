@@ -41,6 +41,38 @@ router.delete(
     testsController.deleteTests
 );
 
+///// Interaction /////
+router.post(
+    '/appoint',
+    requireSchemaValidator('http://example.com/schemas/test/users-need-tests'), // eslint-disable-line
+    requireAuth([admin, user], [mentor]),
+    testsController.postAddTestsForUsers
+);
+router.put(
+    '/start',
+    requireSchemaValidator('http://example.com/schemas/test/user-need-test'),
+    requireAuth([admin, user]),
+    testsController.putStartTest
+);
+router.put(
+    '/complete',
+    requireSchemaValidator('http://example.com/schemas/test/test-completed'),
+    requireAuth([admin, user]),
+    testsController.putCompleteTest
+);
+router.get(
+    '/results',
+    requireSchemaValidator('http://example.com/schemas/test/users-need-tests'),
+    requireAuth([admin, user]),
+    testsController.getTestsResults
+);
+router.delete(
+    '/cancel',
+    requireSchemaValidator('http://example.com/schemas/test/users-need-tests'),
+    requireAuth([admin, user], [mentor]),
+    testsController.postDeleteTestsForUsers
+);
+
 router.use('/questions', questionsRouter);
 
 export const testsRouter = router;
