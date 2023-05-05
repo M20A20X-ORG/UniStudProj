@@ -5,6 +5,5 @@
   "printWidth": 100,
   "singleQuote": true,
   "bracketSpacing": true,
-  "singleAttributePerLine": true,
-  "eslintIntegration": true
+  "singleAttributePerLine": true
 }

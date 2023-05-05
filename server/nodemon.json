@@ -1,7 +1,8 @@
 {
   "watch": [
-    "src/"
+    "dist/"
   ],
-  "ext": "ts",
-  "exec": "node --inspect dist/index.js"
+  "ext": "js",
+  "quiet": true,
+  "delay": 1000
 }

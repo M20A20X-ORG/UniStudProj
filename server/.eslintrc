@@ -7,7 +7,6 @@
     "plugin:@typescript-eslint/recommended",
     "plugin:sonarjs/recommended",
     "prettier",
-    "plugin:prettier/recommended",
     "plugin:import/errors",
     "plugin:import/warnings",
     "plugin:import/typescript"
@@ -21,11 +20,9 @@
   },
   "plugins": [
     "@typescript-eslint",
-    "sonarjs",
-    "prettier"
+    "sonarjs"
   ],
   "rules": {
-    "prettier/prettier": "warn",
     "no-alert": "warn",
     "no-console": "warn",
     "import/order": "warn",
@@ -38,6 +35,7 @@
       "warn",
       "before"
     ],
+    "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unused-vars": [
       "warn"
     ]
