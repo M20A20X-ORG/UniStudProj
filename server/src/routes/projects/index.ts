@@ -1,5 +1,4 @@
 import { tasksRouter } from './tasks';
-import { projectsController } from '@controllers/projects';
 
 import { ACCESS_ROLE } from '@configs/auth';
 import { PROJECT_QUERY } from '@schemas/projects';
@@ -10,14 +9,13 @@ import { requireSchemaValidator } from '@middleware/validateSchema';
 import { requireAuth } from '@middleware/auth';
 import { requireQueryValidator } from '@middleware/validateQuery';
 
+import { projectsController } from '@controllers/projects';
+
 const router = createChildRouter();
 const { user, admin } = ACCESS_ROLE;
+const { projectId, projectIds } = PROJECT_QUERY;
 
-router.get(
-    '/get',
-    ...requireQueryValidator(PROJECT_QUERY.projectIds),
-    projectsController.getGetProject
-);
+router.get('/get', ...requireQueryValidator(projectIds), projectsController.getGetProject);
 router.post(
     '/create',
     requireAuth([user, admin]),
@@ -32,7 +30,7 @@ router.put(
 );
 router.delete(
     '/delete',
-    ...requireQueryValidator(PROJECT_QUERY.projectId),
+    ...requireQueryValidator(projectId),
     requireAuth([user, admin]),
     projectsController.deleteDeleteProject
 );

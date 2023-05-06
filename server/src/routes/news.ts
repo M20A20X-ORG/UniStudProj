@@ -12,6 +12,8 @@ import { newsController } from '@controllers/news';
 
 const router = createChildRouter();
 const { admin } = ACCESS_ROLE;
+const { newsIds } = NEWS_QUERY;
+const { isNeedCommon, limit } = COMMON_QUERY;
 
 router.post(
     '/create',
@@ -21,7 +23,7 @@ router.post(
 );
 router.get(
     '/get',
-    ...requireQueryValidator(NEWS_QUERY.newsIds, COMMON_QUERY.needCommonData, COMMON_QUERY.limit),
+    ...requireQueryValidator(newsIds, isNeedCommon, limit),
     newsController.getGetNews
 );
 router.put(
@@ -32,7 +34,7 @@ router.put(
 );
 router.delete(
     '/delete',
-    ...requireQueryValidator(NEWS_QUERY.newsIds),
+    ...requireQueryValidator(newsIds),
     requireAuth([admin]),
     newsController.deleteNews
 );

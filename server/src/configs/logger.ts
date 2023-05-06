@@ -1,8 +1,8 @@
 import * as process from 'process';
 import fs from 'fs';
-import path, { sep } from 'path';
+import path from 'path';
 
-import { TLogConfig, TLogger, TLogHelper, TLogLevel } from '@type/logger';
+import { TLogConfig, TLogger, TLogHandler, TLogHelper } from '@type/logger';
 
 import { concat } from '@utils/concat';
 import { getIsoDate } from '@utils/date';
@@ -17,14 +17,14 @@ interface ILogger {
     debug: TLogger;
 }
 
-class Logger implements ILogger {
-    //----- Fields -----//
-    private readonly _logRoot = `${process.cwd()}${sep}log${sep}`;
-    private readonly _logConfig: TLogConfig = {
-        latestFile: this._logRoot + 'latest.log',
-        debugFile: this._logRoot + 'debug.log'
+class LoggerImpl implements ILogger {
+    ///// Private /////
+    private readonly _logRoot = path.join(process.cwd(), 'log');
+    private readonly _logFile: TLogConfig = {
+        latestFile: path.join(this._logRoot, 'latest.log'),
+        debugFile: path.join(this._logRoot, 'debug.log')
     };
-    private readonly _logLevel: TLogLevel = {
+    private readonly _logHandler: TLogHandler = {
         // eslint-disable-next-line no-console
         info: [console.info, 'INFO'],
         // eslint-disable-next-line no-console
@@ -36,54 +36,53 @@ class Logger implements ILogger {
     };
     private readonly _fileLogger: TLogger;
 
-    //----- Methods -----//
-    constructor() {
-        this._fileLogger = this._createFileLogger();
-    }
-
-    private _logHelper: TLogHelper = ([handler, level], ...data) => {
+    private _logHelper: TLogHelper = ([logHandler, level], ...data) => {
         const prefix = `${getIsoDate()} [${level}]:`;
-        handler(prefix, ...data);
+        logHandler(prefix, ...data);
         this._fileLogger(prefix, ...data);
     };
 
     private _createFileLogger = (): TLogger => {
-        const { latestFile, debugFile } = this._logConfig;
-        const currentFile = process.env.NODE_ENV === 'production' ? latestFile : debugFile;
+        const { latestFile, debugFile } = this._logFile;
+        const currentFile: string = process.env.NODE_ENV === 'production' ? latestFile : debugFile;
 
         if (!fs.existsSync(this._logRoot)) {
             fs.mkdirSync(this._logRoot);
         }
         if (fs.existsSync(currentFile)) {
-            const modifyTime = fs.statSync(currentFile).mtime.toISOString().replace(/:/g, '-');
-            fs.renameSync(currentFile, this._logRoot + modifyTime + path.extname(currentFile));
+            const modifyTime: string = fs
+                .statSync(currentFile)
+                .mtime.toISOString()
+                .replace(/:/g, '-');
+            const newPath: string = path.join(
+                this._logRoot,
+                modifyTime + path.extname(currentFile)
+            );
+            fs.renameSync(currentFile, newPath);
         }
 
         return (...data) => {
-            const stringData = data.map((part) =>
+            const stringData: string[] = data.map((part) =>
                 typeof part === 'object' ? JSON.stringify(part) : part
             );
             fs.appendFileSync(currentFile, concat(stringData, ' ') + '\n');
         };
     };
 
-    public info: TLogger = (...data) => {
-        this._logHelper(this._logLevel.info, ...data);
-    };
+    ///// Public /////
+    constructor() {
+        this._fileLogger = this._createFileLogger();
+    }
 
-    public warn: TLogger = (...data) => {
-        this._logHelper(this._logLevel.warn, ...data);
-    };
+    public info: TLogger = (...data) => this._logHelper(this._logHandler.info, ...data);
 
-    public err: TLogger = (...data) => {
-        this._logHelper(this._logLevel.error, ...data);
-    };
+    public warn: TLogger = (...data) => this._logHelper(this._logHandler.warn, ...data);
+
+    public err: TLogger = (...data) => this._logHelper(this._logHandler.error, ...data);
 
     public debug: TLogger = (...data) => {
-        if (process.env.NODE_ENV === 'debug') {
-            this._logHelper(this._logLevel.debug, ...data);
-        }
+        if (process.env.NODE_ENV === 'debug') this._logHelper(this._logHandler.debug, ...data);
     };
 }
 
-export const log = new Logger();
+export const log = new LoggerImpl();

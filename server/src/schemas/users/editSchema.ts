@@ -1,7 +1,7 @@
 import { JSONSchemaType } from 'ajv';
-import { TUserJson, TUserPartial } from '@type/schemas/user';
+import { TUserJson, TUserEdit } from '@type/schemas/user';
 
-type TEditSchema = JSONSchemaType<TUserJson<TUserPartial>>;
+type TEditSchema = JSONSchemaType<TUserJson<TUserEdit>>;
 
 export const editSchema: TEditSchema = {
     $id: 'http://example.com/schemas/user/edit',

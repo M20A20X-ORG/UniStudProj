@@ -28,8 +28,6 @@ export const SCHEMA_FORMATS: TSchemaFormatGeneral = {
 };
 
 export const COMMON_QUERY = {
-    needCommonData: check('needCommonData', "'needCommonData' must be an boolean")
-        .optional()
-        .isBoolean(),
+    isNeedCommon: check('isNeedCommon', "'isNeedCommon' must be an boolean").optional().isBoolean(),
     limit: check('limit', "'limit' must be a number >= 0").optional().isInt({ min: 0 })
 };

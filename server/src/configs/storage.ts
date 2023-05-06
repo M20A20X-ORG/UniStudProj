@@ -3,25 +3,26 @@ import fs from 'fs';
 import * as process from 'process';
 import multer, { diskStorage, Options } from 'multer';
 
-import { TSetupUpload, TUpload } from '@type/storage';
+import { TFileRequestBody, TFileUpload, TSetupUpload, TUploadSetup } from '@type/storage';
 import { FileUploadError } from '@exceptions/FileUploadError';
 
 interface StorageConfig {
+    readonly storageRoot: string;
     setupUpload: TSetupUpload;
 }
 
 class StorageConfigImpl implements StorageConfig {
-    public STORAGE_ROOT = process.cwd() + '/storage';
+    public readonly storageRoot = path.join(process.cwd(), 'storage');
     private MAX_FILE_SIZE_B = 1048576;
 
-    private _upload: TUpload = {};
+    private _upload: TUploadSetup = {};
 
     private _diskStorageConfig = diskStorage({
         destination: (req, file, next) => {
-            if (!fs.existsSync(this.STORAGE_ROOT)) fs.mkdirSync(this.STORAGE_ROOT);
+            if (!fs.existsSync(this.storageRoot)) fs.mkdirSync(this.storageRoot);
 
-            const { event } = req.body as { event: string };
-            const filePath = this._upload[event].path;
+            const { event } = req.body as TFileRequestBody;
+            const filePath: string = this._upload[event].path;
             if (!fs.existsSync(filePath)) fs.mkdirSync(filePath);
 
             return next(null, filePath);
@@ -36,7 +37,7 @@ class StorageConfigImpl implements StorageConfig {
         if (!file) return next(new FileUploadError('File is not provided!'));
 
         const { event } = req.body || {};
-        const upload = this._upload?.[event];
+        const upload: TFileUpload = this._upload?.[event];
         if (typeof event !== 'string' || !upload)
             return next(new FileUploadError('Upload event is incorrect or not exists!'));
 
@@ -58,11 +59,11 @@ class StorageConfigImpl implements StorageConfig {
     public setupUpload: TSetupUpload = (type, event, extensions, path) => {
         this._upload[event] = {
             event,
-            path: this.STORAGE_ROOT.concat(path || ''),
+            path: this.storageRoot.concat(path || ''),
             extensions
         };
         return this._multer[type](event);
     };
 }
 
-export const { setupUpload, STORAGE_ROOT } = new StorageConfigImpl();
+export const { setupUpload, storageRoot } = new StorageConfigImpl();

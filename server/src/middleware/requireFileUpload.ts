@@ -1,12 +1,14 @@
+import { RequestHandler } from 'express';
 import { MulterError } from 'multer';
 import { TSetupUpload } from '@type/storage';
 
-import { setupUpload } from '@configs/storage';
-import { sendResponse } from '@utils/sendResponse';
 import { FileUploadError } from '@exceptions/FileUploadError';
 
-const promisifySetupUpload: TSetupUpload = (type, event, extensions, path) => {
-    const handler = setupUpload(type, event, extensions, path);
+import { setupUpload } from '@configs/storage';
+import { sendResponse } from '@utils/sendResponse';
+
+const requireUploadHandler: TSetupUpload = (type, event, extensions, path) => {
+    const handler: RequestHandler = setupUpload(type, event, extensions, path);
     return async (req, res, next) =>
         new Promise((resolve, reject) =>
             handler(req, res, (err) => (err ? reject(err) : resolve(next())))
@@ -16,7 +18,7 @@ const promisifySetupUpload: TSetupUpload = (type, event, extensions, path) => {
 export const requireFileUpload: TSetupUpload = (type, event, extensions, path) => {
     return async (req, res, next) => {
         try {
-            const handler = promisifySetupUpload(type, event, extensions, path);
+            const handler = requireUploadHandler(type, event, extensions, path);
             return await handler(req, res, next);
         } catch (error: unknown) {
             const { code, message, stack, field } = error as MulterError;

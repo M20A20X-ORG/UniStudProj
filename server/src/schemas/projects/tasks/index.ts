@@ -5,18 +5,18 @@ import { editSchema } from './editSchema';
 
 import { PROJECT_FORMATS } from '@schemas/projects';
 
-import { TSchemaFormats, TSchemas } from '@type/schema';
+import { TSchema } from '@type/schema';
 
-export const TASK_SCHEMA: TSchemas = {
+export const TASK_SCHEMA: TSchema = {
     creationSchema,
     editSchema
-} as const;
+};
 
-export const TASK_FORMATS: TSchemaFormats = {
+export const TASK_FORMATS = {
     taskName: PROJECT_FORMATS.projectName
-} as const;
+};
 
 export const TASK_QUERY = {
     status: check('status', 'status must be a string').isString(),
     taskId: check('taskId', 'taskId must be a number >= 1').isInt()
-} as const;
+};

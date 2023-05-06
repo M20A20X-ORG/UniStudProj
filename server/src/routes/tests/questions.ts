@@ -12,10 +12,11 @@ import { questionsController } from '@controllers/question';
 const router = createChildRouter();
 const { admin, user } = ACCESS_ROLE;
 const { mentor } = PROJECT_ACCESS_ROLE;
+const { questionIds, needResults } = QUESTION_QUERY;
 
 router.delete(
     '/delete',
-    ...requireQueryValidator(QUESTION_QUERY.questionIds),
+    ...requireQueryValidator(questionIds),
     requireAuth([admin, user], [mentor]),
     questionsController.deleteDeleteQuestions
 );
@@ -27,7 +28,7 @@ router.post(
 );
 router.get(
     '/get',
-    ...requireQueryValidator(QUESTION_QUERY.questionIds, QUESTION_QUERY.needResults),
+    ...requireQueryValidator(questionIds, needResults),
     requireAuth([admin, user]),
     questionsController.getGetQuestions
 );

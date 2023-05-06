@@ -1,8 +1,10 @@
 import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
-import { TGetSql } from '@type/sql';
+import { TGetSql, TModifyQueryResponse } from '@type/sql';
 
 import { DataModificationError } from '@exceptions/DataModificationError';
+
+import { log } from '@configs/logger';
 
 const handleError = (
     error: unknown,
@@ -30,13 +32,19 @@ export const updateDependent = async <T>(
 ): Promise<void> => {
     try {
         const [insertSql, deleteSql, updateAmountSql] = getSql(id, data, deleteData);
-        if (deleteSql) await connection.query(deleteSql);
+        if (deleteSql) {
+            const dbResponse: TModifyQueryResponse = await connection.query(deleteSql);
+            log.debug(dbResponse);
+        }
         if (insertSql?.length) {
             const promisesUpdate: Promise<void>[] = insertSql.map(
                 (sql) =>
                     new Promise(async (resolve, reject) => {
                         try {
-                            if (sql) await connection.query(sql);
+                            if (sql) {
+                                const dbResponse = await connection.query(sql);
+                                log.debug(dbResponse);
+                            }
                             resolve();
                         } catch (error: unknown) {
                             reject(error);
@@ -45,7 +53,10 @@ export const updateDependent = async <T>(
             );
             await Promise.all(promisesUpdate);
         }
-        if ((deleteSql || insertSql) && updateAmountSql) await connection.query(updateAmountSql);
+        if ((deleteSql || insertSql) && updateAmountSql) {
+            const dbResponse: TModifyQueryResponse = await connection.query(updateAmountSql);
+            log.debug(dbResponse);
+        }
     } catch (error: unknown) {
         handleError(error, errNoRefStr, errDupEntryStr);
     }

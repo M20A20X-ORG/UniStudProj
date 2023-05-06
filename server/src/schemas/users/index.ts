@@ -3,27 +3,25 @@ import { check } from 'express-validator';
 import { registrationSchema } from './registrationSchema';
 import { editSchema } from './editSchema';
 
-import { TQueryValidators, TSchemaFormats, TSchemas } from '@type/schema';
-import { RequestParamsError } from '@exceptions/RequestParamsError';
+import { TSchema } from '@type/schema';
 
-export const USER_SCHEMA: TSchemas = {
+export const USER_SCHEMA: TSchema = {
     registrationSchema,
     editSchema
-} as const;
+};
 
-export const USER_FORMAT: TSchemaFormats = {
+export const USER_FORMAT = {
     userFullName: /^([A-Z][a-z]+\s?){3,}$/i,
     userUsername: /^[a-z\d]{5,}$/,
     userPassword: /^[\w\W]{6,}$/,
     userEmail: /^[a-z\d]+@[a-z\d]+.[a-z\d]+$/
-} as const;
+};
 
 export const USER_QUERY = {
-    userId: check('userIdentifiers')
+    userIdentifiers: check(
+        'userIdentifiers',
+        `userIdentifiers must be an array of numbers >= 1 or strings with pattern ${USER_FORMAT.userUsername}}`
+    )
         .isArray()
-        .withMessage(
-            new RequestParamsError(
-                `userIdentifiers must be an array of numbers >= 1 or strings with pattern ${USER_FORMAT.userUsername}}`
-            ).message
-        )
-} as const;
+        .custom((id) => !isNaN(id) || USER_FORMAT.userUsername.test(id))
+};

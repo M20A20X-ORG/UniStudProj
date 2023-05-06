@@ -1,1 +1,1 @@
-export const getIsoDate = () => new Date().toISOString().replace(/:/g, '-');
+export const getIsoDate = (): string => new Date().toISOString().replace(/:/g, '-');

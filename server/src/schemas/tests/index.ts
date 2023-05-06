@@ -9,11 +9,11 @@ import {
     usersNeedTestsSchema
 } from './usersNeedTestsSchema';
 
-import { TSchemaFormats, TSchemas } from '@type/schema';
+import { TSchema } from '@type/schema';
 
 import { PROJECT_FORMATS } from '@schemas/projects';
 
-export const TEST_SCHEMA: TSchemas = {
+export const TEST_SCHEMA: TSchema = {
     creationPureSchema,
     creationSchema,
     editPureSchema,
@@ -22,18 +22,15 @@ export const TEST_SCHEMA: TSchemas = {
     userNeedTestSchema,
     usersNeedTestsSchema,
     testCompletedSchema
-} as const;
+};
 
-export const TEST_FORMAT: TSchemaFormats = {
+export const TEST_FORMAT = {
     testName: PROJECT_FORMATS.projectName
-} as const;
+};
 
 export const TEST_QUERY = {
     testIds: query('testIds', "'testIds' must be an array of numbers >= 1")
         .optional()
         .isArray()
-        .custom((testIds: any[]) => testIds.every((elem) => !isNaN(elem) && elem >= 1)),
-    needCommonDataOnly: query('needCommonDataOnly', "'needCommonDataOnly' must be boolean value")
-        .optional()
-        .isBoolean()
-} as const;
+        .custom((testIds: any[]) => testIds.every((elem) => !isNaN(elem) && elem >= 1))
+};

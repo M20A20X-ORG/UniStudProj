@@ -1,9 +1,11 @@
 import { questionsRouter } from './questions';
 
 import { ACCESS_ROLE, PROJECT_ACCESS_ROLE } from '@configs/auth';
+import { COMMON_QUERY } from '@schemas/index';
 import { TEST_QUERY } from '@schemas/tests';
 
 import { createChildRouter } from '@utils/router';
+
 import { requireQueryValidator } from '@middleware/validateQuery';
 import { requireSchemaValidator } from '@middleware/validateSchema';
 import { requireAuth } from '@middleware/auth';
@@ -13,7 +15,8 @@ import { testsController } from '@controllers/test';
 const router = createChildRouter();
 const { admin, user } = ACCESS_ROLE;
 const { mentor } = PROJECT_ACCESS_ROLE;
-const { testIds, needCommonDataOnly } = TEST_QUERY;
+const { isNeedCommon } = COMMON_QUERY;
+const { testIds } = TEST_QUERY;
 
 ///// CRUD /////
 router.post(
@@ -24,7 +27,7 @@ router.post(
 );
 router.get(
     '/get',
-    ...requireQueryValidator(testIds, needCommonDataOnly),
+    ...requireQueryValidator(testIds, isNeedCommon),
     requireAuth([admin, user]),
     testsController.getGetTests
 );

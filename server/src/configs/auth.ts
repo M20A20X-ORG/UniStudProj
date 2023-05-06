@@ -11,14 +11,15 @@ import {
     verify,
     VerifyOptions
 } from 'jsonwebtoken';
+import { TAccessRole, TProjectAccessRole, TUserAccessRole } from '@type/auth';
 import { TAuthPayload, TRefreshToken } from '@type/schemas/auth';
-
-import { InvalidAccessRolesError } from '@exceptions/InvalidAccessRolesError';
 import { AuthorizationError } from '@exceptions/AuthorizationError';
 import { AuthenticationError } from '@exceptions/AuthenticationError';
 
 import { AUTH_SQL } from '@static/sql/auth';
+
 import { sqlPool } from '@configs/sqlPool';
+import { TReadQueryResponse } from '@type/sql';
 
 interface Auth {
     readonly ACCESS_ROLE: { [key: string]: string };
@@ -29,36 +30,26 @@ interface Auth {
 }
 
 class AuthImpl implements Auth {
-    ///// Private /////
-    private readonly _ACCESS_ROLE_PREFIX = 'ROLE_';
-    private _PROJECT_ACCESS_ROLE_PREFIX = 'ROLE_PROJECT_';
-
     ///// Public /////
     public readonly DEFAULT_ACCESS_ROLE_ID = 2;
-    public readonly ACCESS_ROLE = {
-        admin: this._ACCESS_ROLE_PREFIX + 'ADMINISTRATOR',
-        user: this._ACCESS_ROLE_PREFIX + 'USER'
+    public readonly ACCESS_ROLE: TAccessRole<TUserAccessRole> = {
+        admin: 'ROLE_ADMINISTRATOR',
+        user: 'ROLE_USER'
     };
-    public PROJECT_ACCESS_ROLE = {
-        owner: this._PROJECT_ACCESS_ROLE_PREFIX + 'OWNER',
-        manager: this._PROJECT_ACCESS_ROLE_PREFIX + 'MANAGER',
-        mentor: this._PROJECT_ACCESS_ROLE_PREFIX + 'MENTOR',
-        developer: this._PROJECT_ACCESS_ROLE_PREFIX + 'DEVELOPER'
+    public readonly PROJECT_ACCESS_ROLE: TAccessRole<TProjectAccessRole> = {
+        owner: 'ROLE_PROJECT_OWNER',
+        manager: 'ROLE_PROJECT_MANAGER',
+        mentor: 'ROLE_PROJECT_MENTOR',
+        developer: 'ROLE_PROJECT_DEVELOPER'
     };
-
-    constructor() {
-        Object.keys(this.ACCESS_ROLE).every((key) => {
-            const roleKey = key as keyof typeof this.ACCESS_ROLE;
-            if (!this.ACCESS_ROLE[roleKey].startsWith(this._ACCESS_ROLE_PREFIX))
-                throw new InvalidAccessRolesError(this.ACCESS_ROLE[roleKey]);
-        });
-    }
 
     ///// Public /////
 
     public createRefreshToken = (): Pick<TRefreshToken, 'token' | 'expireDate'> => {
         const jwtRefreshExpireTime = parseInt(process.env.JWT_REFRESH_EXPIRE_TIME as string);
-        const expireDate = new Date(new Date().getTime() + 1000 * jwtRefreshExpireTime);
+        const expireDate: number = new Date(
+            new Date().getTime() + 1000 * jwtRefreshExpireTime
+        ).getTime();
         return {
             token: v4(),
             expireDate
@@ -91,9 +82,9 @@ class AuthImpl implements Auth {
     };
 
     public authorizeAccess = (userData: TAuthPayload, requiredRoles: string[]): void => {
-        const accessRole = userData.role;
+        const accessRole: string = userData.role;
         if (!accessRole) throw new AuthorizationError('No role!');
-        else if (!requiredRoles.includes(accessRole)) throw new AuthorizationError(accessRole);
+        if (!requiredRoles.includes(accessRole)) throw new AuthorizationError(accessRole);
     };
 
     public authorizeProjectAccess = async (
@@ -101,10 +92,10 @@ class AuthImpl implements Auth {
         userId: number,
         requiredProjectRoles: string[]
     ): Promise<void> => {
-        const dbProjectRoleResponse = await sqlPool.query(AUTH_SQL.selectProjectRole, [
-            projectId,
-            userId
-        ]);
+        const dbProjectRoleResponse: TReadQueryResponse = await sqlPool.query(
+            AUTH_SQL.selectProjectRoleSql,
+            [projectId, userId]
+        );
         const [[dbProjectRole]] = dbProjectRoleResponse;
         if (!dbProjectRole) throw new AuthenticationError('Specified project are not exists!');
 

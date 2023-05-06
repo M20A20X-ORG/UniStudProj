@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import { TAuthPayload } from '@type/schemas/auth';
 
 import { AuthenticationError } from '@exceptions/AuthenticationError';
 import { AuthorizationError } from '@exceptions/AuthorizationError';
@@ -17,7 +18,7 @@ export const requireAuth = (
             if (typeof authorization !== 'string')
                 throw new AuthenticationError("Header 'authorization' is invalid or not exists!");
 
-            const accessTokenPayload = await auth.validateJwtToken(authorization);
+            const accessTokenPayload: TAuthPayload = await auth.validateJwtToken(authorization);
             auth.authorizeAccess(accessTokenPayload, requiredRoles);
             req.user = accessTokenPayload;
 
@@ -39,9 +40,9 @@ export const requireAuth = (
             let responseStatus = 500;
             if (error instanceof AuthorizationError) responseStatus = 403;
             else if (
-                error instanceof TokenExpiredError ||
-                error instanceof JsonWebTokenError ||
-                error instanceof AuthenticationError
+                error instanceof TokenExpiredError
+                || error instanceof JsonWebTokenError
+                || error instanceof AuthenticationError
             )
                 responseStatus = 401;
 

@@ -1,4 +1,5 @@
 import mysql2, { PoolOptions } from 'mysql2';
+import { Pool } from 'mysql2/promise';
 
 const poolConfig: PoolOptions = {
     port: 3306,
@@ -8,4 +9,4 @@ const poolConfig: PoolOptions = {
     password: '1234',
     database: 'unistudproj'
 };
-export const sqlPool = mysql2.createPool(poolConfig).promise();
+export const sqlPool: Pool = mysql2.createPool(poolConfig).promise();
