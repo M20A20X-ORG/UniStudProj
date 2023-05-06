@@ -1,15 +1,16 @@
 import { QueryError } from 'mysql2';
-
+import { TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import { TNews, TNewsCreation, TNewsEdit } from '@type/schemas/news';
-
-import { NEWS_SQL } from '@static/sql/news';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
+import { NEWS_SQL } from '@static/sql/news';
 import { sqlPool } from '@configs/sqlPool';
+
+import { log } from '@configs/logger';
 
 const { createSql, readSql, updateSql, deleteSql } = NEWS_SQL;
 
@@ -30,7 +31,8 @@ class NewsServiceImpl implements NewsService {
 
         try {
             const insertNewsSql = getInsertNews(newsData);
-            await sqlPool.query(insertNewsSql);
+            const dbNewsResponse: TReadQueryResponse = await sqlPool.query(insertNewsSql);
+            log.debug(dbNewsResponse);
         } catch (error: unknown) {
             const { code } = error as QueryError;
             if (code === 'ER_NO_REFERENCED_ROW_2')
@@ -49,9 +51,9 @@ class NewsServiceImpl implements NewsService {
     ): Promise<TPayloadResponse<TNews[]>> => {
         const { getSelectNews } = readSql;
 
-        const selectNews = getSelectNews(newsIds, needCommonData, limit);
-        const dbNewsResponse = await sqlPool.query(selectNews);
-        const [dbNews] = dbNewsResponse as any[];
+        const selectNewsSql = getSelectNews(newsIds, needCommonData, limit);
+        const dbNewsResponse: TReadQueryResponse = await sqlPool.query(selectNewsSql);
+        const [dbNews] = dbNewsResponse;
         if (!dbNews.length)
             throw new NoDataError(`One from specified news, ids: [${newsIds}] are not found!`);
 
@@ -73,7 +75,12 @@ class NewsServiceImpl implements NewsService {
                     new Promise<void>(async (resolve, reject) => {
                         try {
                             const updateNewsSql = getUpdateNews(n);
-                            if (updateNewsSql) await connection.query(updateNewsSql);
+                            if (updateNewsSql) {
+                                const dbNewsResponse: TModifyQueryResponse = await connection.query(
+                                    updateNewsSql
+                                );
+                                log.debug(dbNewsResponse);
+                            }
                             return resolve();
                         } catch (error: unknown) {
                             return reject(error);
@@ -84,7 +91,7 @@ class NewsServiceImpl implements NewsService {
             await connection.commit();
             connection.release();
 
-            const newsIds = newsData.map((n) => n.newsId);
+            const newsIds: number[] = newsData.map((n) => n.newsId);
             const { payload: news } = await this.getNews(newsIds, false, 0);
             return {
                 message: `Successfully updated news, amount: ${promiseUpdates.length}`,
@@ -107,11 +114,11 @@ class NewsServiceImpl implements NewsService {
         const { getDeleteNews } = deleteSql;
 
         const deleteNewsSql = getDeleteNews(newsIds);
-        const dbDeletionResponse = await sqlPool.query(deleteNewsSql);
-        const [dbDeletion] = dbDeletionResponse as any[];
-
+        const dbDeletionResponse: TModifyQueryResponse = await sqlPool.query(deleteNewsSql);
+        const [dbDeletion] = dbDeletionResponse;
         if (!dbDeletion.affectedRows)
             return { message: `One or few specified news, ids [${newsIds}] are not exists` };
+
         return { message: `Successfully deleted news, amount: ${newsIds.length}` };
     };
 }

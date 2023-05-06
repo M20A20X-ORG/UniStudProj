@@ -12,18 +12,19 @@ import {
 import { LIMIT_DEFAULT } from '@static/common';
 import { concat } from '@utils/concat';
 
-type TTestCommon = Omit<TTestCreation, 'questionIds' | 'newQuestions'> &
+type TTestEditCommon = Omit<TTestEdit, 'questionIds' | 'projectId' | 'deleteQuestionIds'>;
+type TTestCreationCommon = Omit<TTestCreation, 'questionIds' | 'newQuestions'> &
     Pick<TTest, 'questionsAmount'>;
 
 export const TEST_SQL = {
     createSql: {
-        getInsertTestsOfProjects: (tests: Array<TProjectId & TTestId>) => {
+        getInsertTestsOfProjects: (tests: Array<TProjectId & TTestId>): string => {
             const values = tests.map((t) => `(${[t.testId, t.projectId]})`);
             return `
                 INSERT INTO tbl_tests_of_projects(test_id, project_id)
                 VALUES ${values}`;
         },
-        getInsertTestCommon: (testsCommonData: TTestCommon): string => {
+        getInsertTestCommon: (testsCommonData: TTestCreationCommon): string => {
             const t = testsCommonData;
             const value = `('${t.name}',${t.timeLimit},${t.questionsAmount},'${t.dateStart}','${t.dateEnd}',${t.passingScore})`;
             return `
@@ -53,11 +54,8 @@ export const TEST_SQL = {
             WHERE test_id = ?`
     },
     updateSql: {
-        getUpdateTestCommon: (
-            testData: Omit<TTestEdit, 'questionIds' | 'projectId' | 'deleteQuestionIds'>
-        ) => {
+        getUpdateTestCommon: (testData: TTestEditCommon): string => {
             const { testId, name, timeLimit, dateStart, dateEnd, passingScore } = testData;
-
             const vales = concat([
                 name ? "name = '" + name.trim() + "'" : '',
                 timeLimit ? 'time_limit = ' + timeLimit : '',
@@ -65,10 +63,9 @@ export const TEST_SQL = {
                 dateEnd ? "date_end = '" + dateEnd.trim() + "'" : '',
                 passingScore ? 'passing_score = ' + passingScore : ''
             ]);
-
             return (
-                vales &&
-                `
+                vales
+                && `
                   UPDATE tbl_tests
                   SET ${vales}
                   WHERE test_id = ${testId}`
@@ -76,22 +73,21 @@ export const TEST_SQL = {
         },
         getUpdateQuestions: (
             testId: number,
-            questionIds: number[] | undefined,
-            deleteQuestionIds: number[] | undefined
+            questionIds?: number[],
+            deleteQuestionIds?: number[]
         ): TUpdateDependentSql => {
-            const updateAmount = `UPDATE tbl_tests AS t
-                                  SET t.questions_amount = (SELECT COUNT(q.test_id)
-                                                            FROM tbl_questions_of_tests AS q
-                                                            WHERE q.test_id = ${testId})
-                                  WHERE t.test_id = ${testId}`;
-
+            const updateAmount = `
+                UPDATE tbl_tests AS t
+                SET t.questions_amount = (SELECT COUNT(q.test_id)
+                                          FROM tbl_questions_of_tests AS q
+                                          WHERE q.test_id = ${testId})
+                WHERE t.test_id = ${testId}`;
             const updateSql = questionIds && [
                 TEST_SQL.createSql.getInsertQuestionsOfTests(testId, questionIds)
             ];
-
-            const deleteSql =
-                deleteQuestionIds &&
-                `
+            const deleteSql
+                = deleteQuestionIds
+                && `
                   DELETE
                   FROM tbl_questions_of_tests
                   WHERE test_id = ${testId}
@@ -101,19 +97,19 @@ export const TEST_SQL = {
         }
     },
     deleteSql: {
-        getDeleteTests: (testIds: number[]) => `
+        getDeleteTests: (testIds: number[]): string => `
             DELETE
             FROM tbl_tests
             WHERE test_id IN (${testIds})`
     },
     interactSql: {
-        getInsertUsersNeedTests: (usersNeedTests: TUserNeedTest[]) => {
+        getInsertUsersNeedTests: (usersNeedTests: TUserNeedTest[]): string => {
             const values = usersNeedTests.map((u) => `(${[u.testId, u.userId, u.projectId]})`);
             return `
                 INSERT INTO tbl_users_need_tests(test_id, user_id, project_id)
                 VALUES ${values}`;
         },
-        getSelectUsersNeedTests: (usersNeedTests: TUserNeedTest) => {
+        getSelectUsersNeedTests: (usersNeedTests: TUserNeedTest): string => {
             const { userId, testId, projectId } = usersNeedTests;
             return `
                 SELECT test_id        AS testId,
@@ -129,24 +125,29 @@ export const TEST_SQL = {
                   AND project_id = ${projectId}
             `;
         },
-        getUpdateUsersNeedTests: (completedTest: TUserNeedTest & Partial<TUsersNeedTests>) => {
-            const { testId, userId, projectId, score, state, dateStarted, dateCompleted } =
-                completedTest;
+        getUpdateUsersNeedTests: (
+            completedTest: TUserNeedTest & Partial<TUsersNeedTests>
+        ): string => {
+            const { testId, userId, projectId, score, state, dateStarted, dateCompleted }
+                = completedTest;
             const values = concat([
                 dateCompleted ? "date_completed = '" + dateCompleted.trim() + "'" : '',
                 dateStarted ? "date_started = '" + dateStarted.trim() + "'" : '',
                 state ? "state = '" + state.trim() + "'" : '',
                 score ? 'score = ' + score : ''
             ]);
-            return `
-                UPDATE tbl_users_need_tests
-                SET ${values}
-                WHERE user_id = ${userId}
-                  AND test_id = ${testId}
-                  AND project_id = ${projectId}
-            `;
+            return (
+                values
+                && `
+                  UPDATE tbl_users_need_tests
+                  SET ${values}
+                  WHERE user_id = ${userId}
+                    AND test_id = ${testId}
+                    AND project_id = ${projectId}
+              `
+            );
         },
-        getDeleteUsersNeedTests: (userNeedTest: TUserNeedTest) => {
+        getDeleteUsersNeedTests: (userNeedTest: TUserNeedTest): string => {
             const { userId, testId, projectId } = userNeedTest;
             return `
                 DELETE

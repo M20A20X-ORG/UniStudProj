@@ -1,4 +1,3 @@
-import { concat } from '@utils/concat.js';
 import { ServerError } from '@exceptions/ServerError';
 
 export class NoSchemaError extends ServerError {

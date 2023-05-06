@@ -7,6 +7,7 @@ import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
+
 import { newsService } from '@services/news';
 
 interface NewsController {
@@ -34,10 +35,9 @@ class NewsControllerImpl implements NewsController {
         try {
             const newsIdsParam = req.query.newsIds as string[];
             const needCommonData = (req.query.needCommonData as string) === 'true';
-            const limitParam = req.query.limit as string;
 
+            const limit = parseInt(req.query.limit as string);
             const newsIds = newsIdsParam.map((id) => parseInt(id));
-            const limit = parseInt(limitParam);
 
             const serviceResponse = await newsService.getNews(newsIds, needCommonData, limit);
             return res.status(200).json(serviceResponse);

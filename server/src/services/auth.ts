@@ -1,16 +1,23 @@
 import { compareSync } from 'bcrypt';
 
 import { QueryError } from 'mysql2';
+import { TReadQueryResponse, TModifyQueryResponse } from '@type/sql';
 import { TAuthPayload, TRefreshToken, TUserLogin } from '@type/schemas/auth';
-import { TAuthResponse, TLoginResponse, TPayloadResponse } from '@type/schemas/response';
-import { TUser } from '@type/schemas/user';
+import { TAuthResponse, TPayloadResponse } from '@type/schemas/response';
+import { TUser, TUserPublic } from '@type/schemas/user';
 
 import { NoDataError } from '@exceptions/NoDataError';
 import { RefreshTokenError } from '@exceptions/RefreshTokenError';
 
+import { AUTH_SQL } from '@static/sql/auth';
+
 import { log } from '@configs/logger';
 import { sqlPool } from '@configs/sqlPool';
 import { auth } from '@configs/auth';
+
+type TLoginResponse = TAuthResponse & TPayloadResponse<TUserPublic>;
+
+const { refreshTokenSql, loginSql } = AUTH_SQL;
 
 interface AuthService {
     refreshJwtToken: (
@@ -25,22 +32,11 @@ class AuthServiceImpl implements AuthService {
         refreshToken: string,
         accessIp: string
     ): Promise<TPayloadResponse<TAuthResponse>> => {
-        const sql = {
-            selectToken: `SELECT user_id AS userId, access_ip AS accessIp, expire_date AS expireDate, token
-                    FROM tbl_user_refresh_tokens
-                    WHERE token = ?`,
-            selectUser: `SELECT u.user_id AS userId,
-                          ur.name   AS role
-                   FROM (SELECT *
-                         FROM tbl_users
-                         WHERE user_id = ?) AS u
-                            JOIN tbl_user_roles ur ON ur.role_id = u.role_id`,
-            deleteToken: `DELETE
-                    FROM tbl_user_refresh_tokens
-                    WHERE token = ?`
-        };
+        const { selectToken, deleteToken, selectUser } = refreshTokenSql;
 
-        const dbTokenResponse = await sqlPool.query(sql.selectToken, [refreshToken]);
+        const dbTokenResponse: TReadQueryResponse = await sqlPool.query(selectToken, [
+            refreshToken
+        ]);
         const [[dbToken]] = dbTokenResponse;
         if (!dbToken)
             throw new RefreshTokenError('No session found for this token - please, login first!');
@@ -49,12 +45,14 @@ class AuthServiceImpl implements AuthService {
         if (accessIp !== lastAccessIp)
             throw new RefreshTokenError('Ip change detected - please, log in again!');
         if (new Date(expireDate).getTime() < new Date().getTime()) {
-            const dbDeletionResponse = await sqlPool.query(sql.deleteToken, [refreshToken]);
+            const dbDeletionResponse: TModifyQueryResponse = await sqlPool.query(deleteToken, [
+                refreshToken
+            ]);
             log.debug(dbDeletionResponse);
             throw new RefreshTokenError('Session was expired - please, login again!');
         }
 
-        const dbUserResponse = await sqlPool.query(sql.selectUser, [userId]);
+        const dbUserResponse: TReadQueryResponse = await sqlPool.query(selectUser, [userId]);
         const [[dbUser]] = dbUserResponse;
         if (!dbUser) throw new NoDataError(`No user was found for this session`);
 
@@ -70,37 +68,28 @@ class AuthServiceImpl implements AuthService {
         accessIp: string
     ): Promise<TLoginResponse> => {
         const { username, password } = userCredentials;
-        const sql = {
-            selectUserData: `SELECT u.user_id  AS userId,
-                              u.password AS passwordHash,
-                              ur.name    AS role,
-                              u.*
-                       FROM (SELECT *
-                             FROM tbl_users
-                             WHERE username = ?) AS u
-                                JOIN tbl_user_roles ur ON ur.role_id = u.role_id`,
-            insertRefreshToken: `INSERT INTO tbl_user_refresh_tokens(token, user_id, access_ip, expire_date)
-                           VALUES (?, ?, ?, ?)`
-        };
+        const { selectUserData, insertRefreshToken } = loginSql;
 
-        const dbUserDataResponse = await sqlPool.query(sql.selectUserData, [username, password]);
+        const dbUserDataResponse: TReadQueryResponse = await sqlPool.query(selectUserData, [
+            username,
+            password
+        ]);
         const [[dbUserData]] = dbUserDataResponse;
         if (!dbUserData) throw new NoDataError('No user found for this credentials!');
 
         const { password: passwordHash = '', ...user } = dbUserData as TUser;
-        if (!compareSync(password, passwordHash))
-            throw new NoDataError(`Incorrect username or password!`);
+        const isPasswordCorrect = compareSync(password, passwordHash);
+        if (!isPasswordCorrect) throw new NoDataError(`Incorrect username or password!`);
 
-        const accessToken = auth.createJwtToken({ userId: user.userId, role: user.role });
+        const accessToken: string = auth.createJwtToken({ userId: user.userId, role: user.role });
         const { token: refreshToken, expireDate } = auth.createRefreshToken();
 
         try {
-            await sqlPool.query(sql.insertRefreshToken, [
-                refreshToken,
-                user.userId,
-                accessIp,
-                expireDate
-            ]);
+            const dbRefreshTokenResponse: TModifyQueryResponse = await sqlPool.query(
+                insertRefreshToken,
+                [refreshToken, user.userId, accessIp, expireDate]
+            );
+            log.debug(dbRefreshTokenResponse);
         } catch (error: unknown) {
             const { code } = error as QueryError;
             if (code === 'ER_DUP_ENTRY')

@@ -1,8 +1,10 @@
 import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
+import { TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import {
     TOption,
+    TOptionCreation,
     TOptionEdit,
     TOptionId,
     TQuestion,
@@ -13,13 +15,15 @@ import {
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { QUESTION_SQL } from '@static/sql/quesiton';
 import { COMMON_SQL } from '@static/sql/common';
 
-import { sqlPool } from '@configs/sqlPool';
 import { updateDependent } from '@utils/updateDependent';
-import { DataModificationError } from '@exceptions/DataModificationError';
+
+import { sqlPool } from '@configs/sqlPool';
+import { log } from '@configs/logger';
 
 const { deleteSql, createSql, readSql, updateSql } = QUESTION_SQL;
 const { getSelectLastInsertId } = COMMON_SQL;
@@ -40,8 +44,8 @@ class QuestionsServiceImpl implements QuestionsService {
         connection: PoolConnection,
         questionData: TQuestionCreation
     ) => {
-        const { getInsertQuestionsCommon, getInsertQuestionOptions, getInsertQuestionResults } =
-            createSql;
+        const { getInsertQuestionsCommon, getInsertQuestionOptions, getInsertQuestionResults }
+            = createSql;
         const { options, results, ...qCommonData } = questionData;
 
         results.forEach((r) => {
@@ -56,7 +60,10 @@ class QuestionsServiceImpl implements QuestionsService {
 
         try {
             const insertQuestionsCommonSql = getInsertQuestionsCommon(qCommonData);
-            await connection.query(insertQuestionsCommonSql);
+            const dbQuestionsResponse: TModifyQueryResponse = await connection.query(
+                insertQuestionsCommonSql
+            );
+            log.debug(dbQuestionsResponse);
         } catch (error: unknown) {
             const { code } = error as QueryError;
             if (code === 'ER_NO_REFERENCED_ROW_2')
@@ -66,26 +73,32 @@ class QuestionsServiceImpl implements QuestionsService {
             throw error;
         }
 
-        const getSelectQuestionLIId = getSelectLastInsertId('questionId');
-        const dbNewQuestionIdResponse = await connection.query(getSelectQuestionLIId);
-        const [[dbNewQuestionId]] = dbNewQuestionIdResponse as any;
+        const dbNewQuestionIdResponse: TReadQueryResponse = await connection.query(
+            getSelectLastInsertId('questionId')
+        );
+        const [[dbNewQuestionId]] = dbNewQuestionIdResponse;
         if (!dbNewQuestionId) throw new DataAddingError('Error adding new question!');
         const { questionId } = dbNewQuestionId as TQuestionId;
 
         const insertOptionsSql = getInsertQuestionOptions(questionId, options);
-        await connection.query(insertOptionsSql);
+        const dbOptionsResponse: TModifyQueryResponse = await connection.query(insertOptionsSql);
+        log.debug(dbOptionsResponse);
 
-        const getSelectOptionLIId = getSelectLastInsertId('optionId');
-        const dbNewOptionIdResponse = await connection.query(getSelectOptionLIId);
-        const [[dbNewOptionId]] = dbNewOptionIdResponse as any;
+        const dbNewOptionIdResponse: TReadQueryResponse = await connection.query(
+            getSelectLastInsertId('optionId')
+        );
+        const [[dbNewOptionId]] = dbNewOptionIdResponse;
         if (!dbNewOptionId) throw new DataAddingError('Error adding new option!');
         const { optionId: optionLIId } = dbNewOptionId as TOptionId;
 
         const resultIds: number[] = new Array(results.length)
             .fill(null)
             .map((_, id) => optionLIId - id);
-        const insertQuestionResults = getInsertQuestionResults(questionId, resultIds);
-        await connection.query(insertQuestionResults);
+        const insertQuestionResultsSql = getInsertQuestionResults(questionId, resultIds);
+        const dbQueryResponse: TModifyQueryResponse = await connection.query(
+            insertQuestionResultsSql
+        );
+        log.debug(dbQueryResponse);
     };
 
     private _updateQuestion = async (connection: PoolConnection, questionData: TQuestionEdit) => {
@@ -94,7 +107,12 @@ class QuestionsServiceImpl implements QuestionsService {
 
         try {
             const updateQuestionCommonSql = getUpdateQuestionCommon(qCommonData);
-            if (updateQuestionCommonSql) await connection.query(updateQuestionCommonSql);
+            if (updateQuestionCommonSql) {
+                const dbQuestionResponse: TModifyQueryResponse = await connection.query(
+                    updateQuestionCommonSql
+                );
+                log.debug(dbQuestionResponse);
+            }
         } catch (error: unknown) {
             const { code } = error as QueryError;
             if (code === 'ER_NO_REFERENCED_ROW_2')
@@ -130,8 +148,10 @@ class QuestionsServiceImpl implements QuestionsService {
         const { getDeleteQuestions } = deleteSql;
 
         const deleteQuestionsSql = getDeleteQuestions(questionIds);
-        const dbDeletionResponse = await sqlPool.query(deleteQuestionsSql);
-        const [dbDeletion] = dbDeletionResponse as any[];
+        log.debug(deleteQuestionsSql);
+
+        const dbDeletionResponse: TModifyQueryResponse = await sqlPool.query(deleteQuestionsSql);
+        const [dbDeletion] = dbDeletionResponse;
 
         let message = `Successfully deleted questions, amount: ${questionIds.length}`;
         if (!dbDeletion.affectedRows) message = `No questions found, ids: ${questionIds}`;
@@ -147,7 +167,11 @@ class QuestionsServiceImpl implements QuestionsService {
                 (qData) =>
                     new Promise<void>(async (resolve, reject) => {
                         try {
-                            await this._insertQuestion(connection, qData);
+                            const dbQuestionResponse = await this._insertQuestion(
+                                connection,
+                                qData
+                            );
+                            log.debug(dbQuestionResponse);
                             return resolve();
                         } catch (error: unknown) {
                             return reject(error);
@@ -172,28 +196,34 @@ class QuestionsServiceImpl implements QuestionsService {
         questionIds: number[],
         needResults: boolean
     ): Promise<TPayloadResponse<TQuestion[]>> => {
-        const { getSelectQuestion, selectQuestionOptions, selectQuestionResults } = readSql;
+        const { selectQuestion, selectQuestionOptions, selectQuestionResults } = readSql;
 
         const promiseSelects: Promise<TQuestion>[] = questionIds.map(
             (id) =>
                 new Promise<TQuestion>(async (resolve, reject) => {
                     try {
-                        const selectQuestion = getSelectQuestion(id);
-                        const dbQuestionResponse = await sqlPool.query(selectQuestion);
-                        const [[dbQuestion]] = dbQuestionResponse as any;
+                        const dbQuestionResponse: TReadQueryResponse = await sqlPool.query(
+                            selectQuestion,
+                            [id]
+                        );
+                        const [[dbQuestion]] = dbQuestionResponse;
                         if (!dbQuestion)
                             throw new NoDataError(`Specified question, id: ${id} is not exists!`);
                         const question = dbQuestion as TQuestion;
 
-                        const dbOptionsResponse = await sqlPool.query(selectQuestionOptions, [id]);
-                        const [dbOptions] = dbOptionsResponse as any[];
+                        const dbOptionsResponse: TReadQueryResponse = await sqlPool.query(
+                            selectQuestionOptions,
+                            [id]
+                        );
+                        const [dbOptions] = dbOptionsResponse;
                         if (dbOptions.length) question.options = dbOptions as TOption[];
 
                         if (needResults) {
-                            const dbResultsResponse = await sqlPool.query(selectQuestionResults, [
-                                id
-                            ]);
-                            const [dbResults] = dbResultsResponse as any[];
+                            const dbResultsResponse: TReadQueryResponse = await sqlPool.query(
+                                selectQuestionResults,
+                                [id]
+                            );
+                            const [dbResults] = dbResultsResponse;
                             if (dbResults.length) question.result = dbResults as TOption[];
                         }
 
@@ -221,7 +251,11 @@ class QuestionsServiceImpl implements QuestionsService {
                 (qData) =>
                     new Promise<void>(async (resolve, reject) => {
                         try {
-                            await this._updateQuestion(connection, qData);
+                            const dbQuestionResponse = await this._updateQuestion(
+                                connection,
+                                qData
+                            );
+                            log.debug(dbQuestionResponse);
                             return resolve();
                         } catch (error: unknown) {
                             return reject(error);
@@ -233,7 +267,7 @@ class QuestionsServiceImpl implements QuestionsService {
             await connection.commit();
             connection.release();
 
-            const questionIds = questionsData.map((q) => q.questionId);
+            const questionIds: number[] = questionsData.map((q) => q.questionId);
             const { payload: updatedQuestions } = await this.getQuestions(questionIds, true);
             return {
                 message: `Successfully updated questions, amount: '${promiseUpdates.length}'`,

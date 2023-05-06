@@ -1,6 +1,6 @@
 import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
-
+import { TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import {
     TTest,
@@ -11,21 +11,29 @@ import {
     TUserNeedTest,
     TUsersNeedTests
 } from '@type/schemas/tests/test';
-import { TQuestionId, TQuestionMarked, TQuestionPublic } from '@type/schemas/tests/question';
+import {
+    TQuestion,
+    TQuestionId,
+    TQuestionMarked,
+    TQuestionPublic
+} from '@type/schemas/tests/question';
 import { TProjectId } from '@type/schemas/projects/project';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
+import { DataDeletionError } from '@exceptions/DataDeletionError';
 
-import { TEST_SQL } from '@static/sql/test';
+import { TEST_DATE_DIFF_DEFAULT } from '@static/common';
 import { COMMON_SQL } from '@static/sql/common';
+import { TEST_SQL } from '@static/sql/test';
+
+import { updateDependent } from '@utils/updateDependent';
 
 import { sqlPool } from '@configs/sqlPool';
-import { updateDependent } from '@utils/updateDependent';
+import { log } from '@configs/logger';
+
 import { questionsService } from '@services/question';
-import { TEST_DATE_DIFF_DEFAULT } from '@static/common';
-import { DataDeletionError } from '@exceptions/DataDeletionError';
 
 type TTestCommon = Omit<TTest, 'questions'>;
 type TStartTestPayload = { timeLeft: number } | TTest<TQuestionPublic>;
@@ -70,9 +78,9 @@ class TestsServiceImpl implements TestsService {
 
         try {
             const { dateStart, dateEnd } = questionCommonData;
-            const isDateEndInvalid =
-                new Date(dateStart).getTime() >
-                new Date(dateEnd).getTime() - TEST_DATE_DIFF_DEFAULT;
+            const isDateEndInvalid
+                = new Date(dateStart).getTime()
+                > new Date(dateEnd).getTime() - TEST_DATE_DIFF_DEFAULT;
             if (isDateEndInvalid) {
                 const minutes = ((0.0001 * TEST_DATE_DIFF_DEFAULT) / 6).toFixed(0);
                 throw new DataAddingError(
@@ -84,7 +92,10 @@ class TestsServiceImpl implements TestsService {
                 ...questionCommonData,
                 questionsAmount
             });
-            await connection.query(insertTestCommonSql);
+            const dbTestResponse: TModifyQueryResponse = await connection.query(
+                insertTestCommonSql
+            );
+            log.debug(dbTestResponse);
         } catch (error: unknown) {
             const { code, message } = error as QueryError;
             if (code === 'ER_DUP_ENTRY')
@@ -94,16 +105,20 @@ class TestsServiceImpl implements TestsService {
             throw error;
         }
 
-        const getSelectTestLIId = getSelectLastInsertId('testId');
-        const dbNewTestIdResponse = await connection.query(getSelectTestLIId);
-        const [[dbNewTestId]] = dbNewTestIdResponse as any;
+        const dbNewTestIdResponse: TReadQueryResponse = await connection.query(
+            getSelectLastInsertId('testId')
+        );
+        const [[dbNewTestId]] = dbNewTestIdResponse;
         if (!dbNewTestId) throw new DataAddingError('Error adding new test!');
         const { testId } = dbNewTestId as TTestId;
 
         if (questionIds?.length) {
             try {
                 const insertQuestionsSql = getInsertQuestionsOfTests(testId, questionIds);
-                await connection.query(insertQuestionsSql);
+                const dbNewTestIdResponse: TModifyQueryResponse = await connection.query(
+                    insertQuestionsSql
+                );
+                log.debug(dbNewTestIdResponse);
             } catch (error: unknown) {
                 const { code } = error as QueryError;
                 if (code === 'ER_NO_REFERENCED_ROW_2')
@@ -124,7 +139,12 @@ class TestsServiceImpl implements TestsService {
 
         try {
             const updateTestCommonSql = getUpdateTestCommon(tCommonData);
-            if (updateTestCommonSql) await connection.query(updateTestCommonSql);
+            if (updateTestCommonSql) {
+                const dbTestResponse: TModifyQueryResponse = await connection.query(
+                    updateTestCommonSql
+                );
+                log.debug(dbTestResponse);
+            }
         } catch (error: unknown) {
             const { code, message } = error as QueryError;
             if (code === 'ER_DUP_ENTRY')
@@ -160,11 +180,11 @@ class TestsServiceImpl implements TestsService {
             const { options, result } = questionWithResult;
             const { optionIds } = qm;
 
-            const isAllMarkedLessCorrect =
-                optionIds.length === options.length && options.length > result.length;
+            const isAllMarkedLessCorrect
+                = optionIds.length === options.length && options.length > result.length;
             if (isAllMarkedLessCorrect) return score;
 
-            const coincidesAmount = questionWithResult.result.reduce(
+            const coincidesAmount: number = questionWithResult.result.reduce(
                 (amount, { optionId }) => amount + (optionIds.includes(optionId) ? 1 : 0),
                 0
             );
@@ -194,9 +214,10 @@ class TestsServiceImpl implements TestsService {
 
             await Promise.all(promiseInserts);
 
-            const getSelectTestLIId = getSelectLastInsertId('testId');
-            const dbNewTestIdResponse = await connection.query(getSelectTestLIId);
-            const [[dbNewTestId]] = dbNewTestIdResponse as any;
+            const dbNewTestIdResponse: TReadQueryResponse = await connection.query(
+                getSelectLastInsertId('testId')
+            );
+            const [[dbNewTestId]] = dbNewTestIdResponse;
             if (!dbNewTestId) throw new DataAddingError('Error adding new test!');
             const { testId } = dbNewTestId as TTestId;
 
@@ -207,8 +228,11 @@ class TestsServiceImpl implements TestsService {
                     testId: testId - testsAmount + id + 1,
                     projectId: testsData[id].projectId
                 }));
-            const insertTestsOfProjects = getInsertTestsOfProjects(testsOfProjects);
-            await connection.query(insertTestsOfProjects);
+            const insertTestsOfProjectsSql = getInsertTestsOfProjects(testsOfProjects);
+            const dbTestsResponse: TModifyQueryResponse = await connection.query(
+                insertTestsOfProjectsSql
+            );
+            log.debug(dbTestsResponse);
 
             await connection.commit();
             return {
@@ -231,8 +255,8 @@ class TestsServiceImpl implements TestsService {
 
         if (!testIds.length) {
             const selectTestSql = getSelectTest(false);
-            const dbTestsResponse = await sqlPool.query(selectTestSql);
-            const [dbTests] = dbTestsResponse as any[];
+            const dbTestsResponse: TReadQueryResponse = await sqlPool.query(selectTestSql);
+            const [dbTests] = dbTestsResponse;
             const tests = dbTests as TTest[];
 
             const message = !dbTests.length
@@ -250,8 +274,11 @@ class TestsServiceImpl implements TestsService {
                 new Promise<TTestCommon | TTest>(async (resolve, reject) => {
                     try {
                         const selectTestSql = getSelectTest();
-                        const dbTestResponse = await sqlPool.query(selectTestSql, [id]);
-                        const [[dbTest]] = dbTestResponse as any;
+                        const dbTestResponse: TReadQueryResponse = await sqlPool.query(
+                            selectTestSql,
+                            [id]
+                        );
+                        const [[dbTest]] = dbTestResponse;
                         if (!dbTest)
                             throw new NoDataError(`Specified test, id: ${id} is not exists!`);
                         const test = dbTest as TTest;
@@ -260,8 +287,11 @@ class TestsServiceImpl implements TestsService {
                             return resolve(test);
                         }
 
-                        const dbQuestionIdsResponse = await sqlPool.query(selectQuestionIds, [id]);
-                        const [dbQuestionIds] = dbQuestionIdsResponse as any[];
+                        const dbQuestionIdsResponse: TReadQueryResponse = await sqlPool.query(
+                            selectQuestionIds,
+                            [id]
+                        );
+                        const [dbQuestionIds] = dbQuestionIdsResponse;
                         if (testIds.length) {
                             const questionIds: number[] = (
                                 dbQuestionIds as Array<TQuestionId & TTestId>
@@ -280,7 +310,7 @@ class TestsServiceImpl implements TestsService {
                 })
         );
 
-        const tests = (await Promise.all(promiseSelects)) as Array<TTestCommon | TTest>;
+        const tests = await Promise.all(promiseSelects);
         return {
             message: `Successfully got tests, amount: ${promiseSelects.length}`,
             payload: tests
@@ -309,7 +339,7 @@ class TestsServiceImpl implements TestsService {
             await connection.commit();
             connection.release();
 
-            const testIds = testsData.map((t) => t.testId);
+            const testIds: number[] = testsData.map((t) => t.testId);
             const { payload: updatedTests } = await this.getTests(testIds, false, true);
             return {
                 message: `Successfully updated tests, amount: '${promiseUpdates.length}'`,
@@ -327,8 +357,10 @@ class TestsServiceImpl implements TestsService {
         const { getDeleteTests } = deleteSql;
 
         const deleteTestsSql = getDeleteTests(testIds);
-        const dbDeletionResponse = await sqlPool.query(deleteTestsSql);
-        const [dbDeletion] = dbDeletionResponse as any[];
+        const dbDeletionResponse: TModifyQueryResponse = await sqlPool.query(deleteTestsSql);
+        log.debug(dbDeletionResponse);
+
+        const [dbDeletion] = dbDeletionResponse;
 
         let message = `Successfully deleted tests, amount: ${testIds.length}`;
         if (!dbDeletion.affectedRows)
@@ -342,8 +374,11 @@ class TestsServiceImpl implements TestsService {
         const { getInsertUsersNeedTests } = interactSql;
 
         try {
-            const insertUsersNeedTests = getInsertUsersNeedTests(usersNeedTests);
-            await sqlPool.query(insertUsersNeedTests);
+            const insertUsersNeedTestsSql = getInsertUsersNeedTests(usersNeedTests);
+            const dbUsersResponse: TModifyQueryResponse = await sqlPool.query(
+                insertUsersNeedTestsSql
+            );
+            log.debug(dbUsersResponse);
             return {
                 message: `Successfully add tests for specified users, amount: '${usersNeedTests.length}'`
             };
@@ -367,8 +402,11 @@ class TestsServiceImpl implements TestsService {
                 (u) =>
                     new Promise<void>(async (resolve, reject) => {
                         try {
-                            const deleteUsersNeedTests = getDeleteUsersNeedTests(u);
-                            await connection.query(deleteUsersNeedTests);
+                            const deleteUsersNeedTestsSql = getDeleteUsersNeedTests(u);
+                            const dbQueryResponse: TModifyQueryResponse = await connection.query(
+                                deleteUsersNeedTestsSql
+                            );
+                            log.debug(dbQueryResponse);
                             return resolve();
                         } catch (error: unknown) {
                             return reject(error);
@@ -413,9 +451,9 @@ class TestsServiceImpl implements TestsService {
             }
 
             const {
-                payload: [testDataResp]
+                payload: [testDataResponse]
             } = await this.getTests([testId], false, false);
-            const testData = testDataResp as TTest<TQuestionPublic>;
+            const testData = testDataResponse as TTest<TQuestionPublic>;
             const { timeLimit, dateStart, dateEnd } = testData;
 
             const dateNow = new Date();
@@ -428,8 +466,8 @@ class TestsServiceImpl implements TestsService {
                 if (isTestClosed) return { message: `Test are closed` };
             }
 
-            const isStarted =
-                new Date(dateStarted).getTime() < dateNowTime && state === 'TEST_STARTED';
+            const isStarted
+                = new Date(dateStarted).getTime() < dateNowTime && state === 'TEST_STARTED';
             if (isStarted) {
                 const timeLeft = new Date(dateStarted).getTime() + timeLimit - dateNowTime;
                 return {
@@ -438,12 +476,15 @@ class TestsServiceImpl implements TestsService {
                 };
             }
 
-            const insertUsersNeedTests = getUpdateUsersNeedTests({
+            const insertUsersNeedTestsSql = getUpdateUsersNeedTests({
                 ...userNeedTest,
                 state: 'TEST_STARTED',
                 dateStarted: dateNow.toISOString().slice(0, -5).replace('T', ' ')
             });
-            await sqlPool.query(insertUsersNeedTests);
+            const dbUsersResponse: TModifyQueryResponse = await sqlPool.query(
+                insertUsersNeedTestsSql
+            );
+            log.debug(dbUsersResponse);
 
             return {
                 message: `Successfully started test for specified user`,
@@ -469,15 +510,16 @@ class TestsServiceImpl implements TestsService {
 
         const {
             payload: [{ state }]
-        } = await this.getResults([{ testId, projectId, userId }]);
-        if (state === 'TEST_COMPLETED')
+        } = await this.getResults([{ testId, projectId, userId: userId }]);
+        if (state === 'TEST_COMPLETED') {
             return {
                 message: `Specified test, id: ${testId} for user, id: ${userId} already completed `
             };
-        else if (state !== 'TEST_STARTED')
+        } else if (state !== 'TEST_STARTED') {
             return {
                 message: `Specified test, id: ${testId} for user, id: ${userId} was not started before`
             };
+        }
 
         const score = await this._countScore(answers);
 
@@ -489,7 +531,8 @@ class TestsServiceImpl implements TestsService {
             score,
             state: 'TEST_COMPLETED'
         });
-        await sqlPool.query(updateUsersNeedTestsSql);
+        const dbUsersResponse: TModifyQueryResponse = await sqlPool.query(updateUsersNeedTestsSql);
+        log.debug(dbUsersResponse);
 
         const {
             payload: [testResult]
@@ -511,10 +554,10 @@ class TestsServiceImpl implements TestsService {
                 new Promise<TUsersNeedTests>(async (resolve, reject) => {
                     try {
                         const selectUsersNeedTestsSql = getSelectUsersNeedTests(u);
-                        const dbUsersNeedTestsResponse = await sqlPool.query(
+                        const dbUsersNeedTestsResponse: TReadQueryResponse = await sqlPool.query(
                             selectUsersNeedTestsSql
                         );
-                        const [[dbUsersNeedTests]] = dbUsersNeedTestsResponse as any;
+                        const [[dbUsersNeedTests]] = dbUsersNeedTestsResponse;
                         if (!dbUsersNeedTests)
                             throw new NoDataError(`No required test found for specified user`);
 

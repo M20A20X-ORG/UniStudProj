@@ -13,6 +13,7 @@ import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
+
 import { testsService } from '@services/test';
 
 interface TestsController {
@@ -68,7 +69,6 @@ class TestsControllerImpl implements TestsController {
     public putEditTests: RequestHandler = async (req, res) => {
         try {
             const { tests } = req.body as TTestsJson<TTestEdit[]>;
-
             const serviceResponse = await testsService.editTests(tests);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {

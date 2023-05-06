@@ -1,4 +1,4 @@
-export type TMetricsDaily = {
+export type TMetricsCommon = {
     dayGuests: number;
     dayRegistrations: number;
     dayAuthorizations: number;
@@ -15,9 +15,8 @@ export type TMetricsSchemas = {
     allTasksCompleted: number;
 };
 
-export type TMetrics = TMetricsDaily & TMetricsSchemas;
+export type TMetrics = TMetricsCommon & TMetricsSchemas;
 
-export type TMetricsJson<T> = { metrics: T };
 export type TMetricsUpdateAction =
     | 'METRICS_GUEST'
     | 'METRICS_REGISTRATION'

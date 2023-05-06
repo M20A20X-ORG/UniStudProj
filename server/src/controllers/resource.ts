@@ -1,5 +1,8 @@
 import { RequestHandler } from 'express';
+import { TPayloadResponse } from '@type/schemas/response';
+
 import { DataAddingError } from '@exceptions/DataAddingError';
+
 import { sendResponse } from '@utils/sendResponse';
 
 interface ResourceController {
@@ -14,12 +17,13 @@ class ResourceControllerImpl implements ResourceController {
                 throw new DataAddingError('File is not provided!');
 
             const apiUrl = req.protocol + '://' + req.get('host') + '/';
-            const payload = files.map((file) => apiUrl + file.filename);
+            const payload: string[] = files.map((file) => apiUrl + file.filename);
 
-            return res.status(201).json({
+            const response: TPayloadResponse<any> = {
                 message: `Successfully created resources, amount: ${files.length}`,
                 payload
-            });
+            };
+            return res.status(201).json(response);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
             let responseStatus = 500;

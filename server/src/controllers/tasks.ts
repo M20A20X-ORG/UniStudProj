@@ -7,6 +7,7 @@ import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
+
 import { tasksService } from '@services/tasks';
 
 interface TasksController {
@@ -18,10 +19,10 @@ interface TasksController {
 
 class TasksControllerImpl implements TasksController {
     public deleteDeleteTask: RequestHandler = async (req, res) => {
-        const projectId = parseInt(req.query.projectId as string);
-        const taskId = parseInt(req.query.taskId as string);
-
         try {
+            const projectId = parseInt(req.query.projectId as string);
+            const taskId = parseInt(req.query.taskId as string);
+
             const serviceResponse = await tasksService.deleteTask(projectId, taskId);
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
@@ -35,9 +36,8 @@ class TasksControllerImpl implements TasksController {
     };
 
     public getGetTask: RequestHandler = async (req, res) => {
-        const projectId = parseInt(req.query.projectId as string);
-
         try {
+            const projectId = parseInt(req.query.projectId as string);
             const serviceResponse = await tasksService.getTasks(projectId);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
@@ -49,9 +49,8 @@ class TasksControllerImpl implements TasksController {
     };
 
     public postCreateTask: RequestHandler = async (req, res) => {
-        const { task } = req.body as TTaskJson<TTaskCreation>;
-
         try {
+            const { task } = req.body as TTaskJson<TTaskCreation>;
             const serviceResponse = await tasksService.createTask(task);
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
@@ -65,9 +64,8 @@ class TasksControllerImpl implements TasksController {
     };
 
     public putEditTask: RequestHandler = async (req, res) => {
-        const { task } = req.body as TTaskJson<TTaskEdit>;
-
         try {
+            const { task } = req.body as TTaskJson<TTaskEdit>;
             const serviceResponse = await tasksService.editTask(task);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {

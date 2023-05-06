@@ -2,10 +2,11 @@ import { RequestHandler } from 'express';
 import { TMetricsUpdateAction } from '@type/schemas/metrics';
 
 import { NoDataError } from '@exceptions/NoDataError';
+import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
+
 import { metricsService } from '@services/metrics';
-import { DataModificationError } from '@exceptions/DataModificationError';
 
 interface MetricsController {
     getGetMetrics: RequestHandler;

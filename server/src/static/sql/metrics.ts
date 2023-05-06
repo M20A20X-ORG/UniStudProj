@@ -1,4 +1,4 @@
-import { TMetricsDaily, TMetricsUpdateAction } from '@type/schemas/metrics';
+import { TMetricsCommon, TMetricsUpdateAction } from '@type/schemas/metrics';
 import { METRICS_DB_ID, TASK_COMPLETED_DB_ID, TEST_COMPLETED_DB_STATE } from '@static/common';
 
 export const METRICS_SQL = {
@@ -29,7 +29,10 @@ export const METRICS_SQL = {
         WHERE state = '${TEST_COMPLETED_DB_STATE}'`
     },
     updateSql: {
-        getUpdateDailyMetrics: (metrics: TMetricsDaily, metricAction: TMetricsUpdateAction) => {
+        getUpdateDailyMetrics: (
+            metrics: TMetricsCommon,
+            metricAction: TMetricsUpdateAction
+        ): string => {
             let value = '';
             switch (metricAction) {
                 case 'METRICS_AUTHORIZATION':
@@ -54,8 +57,8 @@ export const METRICS_SQL = {
                     break;
             }
             return (
-                value &&
-                `
+                value
+                && `
             UPDATE tbl_metrics
             SET ${value}
             WHERE metrics_id = ${METRICS_DB_ID}`

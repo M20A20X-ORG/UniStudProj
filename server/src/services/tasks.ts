@@ -1,6 +1,6 @@
 import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
-import { TDependency } from '@type/sql';
+import { TDependency, TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import { TTag } from '@type/schemas/projects/project';
 import { TProjectTask, TTaskCreation, TTaskEdit, TTaskId } from '@type/schemas/projects/tasks';
@@ -10,11 +10,16 @@ import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
+import { COMMON_SQL } from '@static/sql/common';
 import { TASK_SQL } from '@static/sql/task';
-import { sqlPool } from '@configs/sqlPool';
+
 import { updateDependent } from '@utils/updateDependent';
 
+import { sqlPool } from '@configs/sqlPool';
+import { log } from '@configs/logger';
+
 const { deleteSql, createSql, readSql, updateSql } = TASK_SQL;
+const { getSelectLastInsertId } = COMMON_SQL;
 
 type TTasksRaw = Array<
     TProjectTask & {
@@ -38,15 +43,17 @@ class TasksServiceImpl implements TasksService {
         taskCommonData: Omit<TTaskCreation, 'tagIds'>,
         connection: PoolConnection
     ) => {
+        const { insertTask } = createSql;
         const { name, description, projectId, statusId, assignUserId } = taskCommonData;
         try {
-            await connection.query(createSql.insertTask, [
+            const dbProjectResponse: TModifyQueryResponse = await connection.query(insertTask, [
                 name,
                 projectId,
                 description,
                 statusId,
                 assignUserId
             ]);
+            log.debug(dbProjectResponse);
         } catch (error: unknown) {
             const { code } = error as QueryError;
 
@@ -62,8 +69,13 @@ class TasksServiceImpl implements TasksService {
 
     private _insertTags = async (taskId: number, tagIds: number[], connection: PoolConnection) => {
         try {
-            const insertTaskTags = createSql.getInsertTagsSql(taskId, tagIds);
-            await connection.query(insertTaskTags, taskId);
+            const { getInsertTagsSql } = createSql;
+            const insertTaskTags = getInsertTagsSql(taskId, tagIds);
+            const dbTagsResponse: TModifyQueryResponse = await connection.query(
+                insertTaskTags,
+                taskId
+            );
+            log.debug(dbTagsResponse);
         } catch (error: unknown) {
             const { code } = error as QueryError;
 
@@ -84,13 +96,25 @@ class TasksServiceImpl implements TasksService {
         try {
             await connection.beginTransaction();
 
-            const dbTaskNameResponse = await connection.query(selectTaskName, [projectId, taskId]);
+            const dbTaskNameResponse: TReadQueryResponse = await connection.query(selectTaskName, [
+                projectId,
+                taskId
+            ]);
             const [[dbTaskName]] = dbTaskNameResponse;
             if (!dbTaskName) throw new DataDeletionError(`No task found, id: '${taskId}'`);
             const { name } = dbTaskName as Pick<TProjectTask, 'name'>;
 
-            await connection.query(deleteTask, [projectId, taskId]);
-            await connection.query(deleteTaskTags, taskId);
+            const dbDeleteTaskResponse: TModifyQueryResponse = await connection.query(deleteTask, [
+                projectId,
+                taskId
+            ]);
+            log.debug(dbDeleteTaskResponse);
+
+            const dbDeleteTagsResponse: TModifyQueryResponse = await connection.query(
+                deleteTaskTags,
+                taskId
+            );
+            log.debug(dbDeleteTagsResponse);
 
             return { message: `Successfully deleted task, name: '${name}'` };
         } catch (error: unknown) {
@@ -104,8 +128,8 @@ class TasksServiceImpl implements TasksService {
     public getTasks = async (projectId: number): Promise<TPayloadResponse<TProjectTask[]>> => {
         const { selectTasks, selectTags } = readSql;
 
-        const dbTasksResponse = await sqlPool.query(selectTasks, [projectId]);
-        const [dbTasks] = dbTasksResponse as any[];
+        const dbTasksResponse: TReadQueryResponse = await sqlPool.query(selectTasks, [projectId]);
+        const [dbTasks] = dbTasksResponse;
         if (!dbTasks.length) throw new NoDataError(`No project found, id: '${projectId}'`);
         const tasksRaw = dbTasks as TTasksRaw;
         const tasks: TProjectTask[] = tasksRaw.map((taskRaw) => {
@@ -115,8 +139,8 @@ class TasksServiceImpl implements TasksService {
             return task;
         });
 
-        const dbTagsResponse = await sqlPool.query(selectTags, [projectId]);
-        const [dbTags] = dbTagsResponse as any[];
+        const dbTagsResponse: TReadQueryResponse = await sqlPool.query(selectTags, [projectId]);
+        const [dbTags] = dbTagsResponse;
         if (dbTags.length) {
             const tags = dbTags as Array<TDependency<TTaskId, TTag>>;
             tasks.forEach(
@@ -144,7 +168,9 @@ class TasksServiceImpl implements TasksService {
             await connection.beginTransaction();
             await this._insertProjectCommon(taskCommonData, connection);
 
-            const dbNewTaskIdResponse = await connection.query(createSql.selectNewTaskId);
+            const dbNewTaskIdResponse: TReadQueryResponse = await connection.query(
+                getSelectLastInsertId('taskId')
+            );
             const [[dbNewTaskId]] = dbNewTaskIdResponse;
             if (!dbNewTaskId) throw new DataAddingError("Can't add new task!");
             const { taskId: newTaskId } = dbNewTaskId as TTaskId;
@@ -169,7 +195,11 @@ class TasksServiceImpl implements TasksService {
         try {
             await connection.beginTransaction();
             try {
-                await connection.query(getUpdateTaskCommon(taskCommonData));
+                const updateTaskCommonSql = getUpdateTaskCommon(taskCommonData);
+                const dbTaskCommon: TModifyQueryResponse = await connection.query(
+                    updateTaskCommonSql
+                );
+                log.debug(dbTaskCommon);
             } catch (error: unknown) {
                 const { code } = error as QueryError;
                 if (code === 'ER_NO_REFERENCED_ROW_2')

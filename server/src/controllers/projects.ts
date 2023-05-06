@@ -5,8 +5,10 @@ import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 import { NoDataError } from '@exceptions/NoDataError';
-import { projectsService } from '@services/projects';
+
 import { sendResponse } from '@utils/sendResponse';
+
+import { projectsService } from '@services/projects';
 
 interface ProjectsController {
     getGetProject: RequestHandler;
@@ -17,9 +19,8 @@ interface ProjectsController {
 
 class ProjectsControllerImpl implements ProjectsController {
     public deleteDeleteProject: RequestHandler = async (req, res) => {
-        const projectId = parseInt(req.query.projectId as string);
-
         try {
+            const projectId = parseInt(req.query.projectId as string);
             const serviceResponse = await projectsService.deleteProject(projectId);
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
@@ -58,9 +59,8 @@ class ProjectsControllerImpl implements ProjectsController {
     };
 
     public putEditProject: RequestHandler = async (req, res) => {
-        const { project } = req.body as TProjectJson<TProjectEdit>;
-
         try {
+            const { project } = req.body as TProjectJson<TProjectEdit>;
             const serviceResponse = await projectsService.editProject(project);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {

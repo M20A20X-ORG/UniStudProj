@@ -7,6 +7,7 @@ import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { sendResponse } from '@utils/sendResponse';
+
 import { questionsService } from '@services/question';
 
 interface QuestionsController {
@@ -35,7 +36,6 @@ class QuestionsControllerImpl implements QuestionsController {
     public postCreateQuestions: RequestHandler = async (req, res) => {
         try {
             const { questions } = req.body as TQuestionsJson<TQuestionCreation[]>;
-
             const serviceResponse = await questionsService.createQuestions(questions);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
@@ -48,8 +48,8 @@ class QuestionsControllerImpl implements QuestionsController {
 
     public getGetQuestions: RequestHandler = async (req, res) => {
         try {
-            const questionIdsParam = req.query.questionIds as string[];
             const needResults = (req.query.needResults as string) === 'true';
+            const questionIdsParam = req.query.questionIds as string[];
             const questionIds = questionIdsParam.map((idStr) => parseInt(idStr));
 
             const serviceResponse = await questionsService.getQuestions(questionIds, needResults);
@@ -65,7 +65,6 @@ class QuestionsControllerImpl implements QuestionsController {
     public putEditQuestions: RequestHandler = async (req, res) => {
         try {
             const { questions } = req.body as TQuestionsJson<TQuestionEdit[]>;
-
             const serviceResponse = await questionsService.editQuestions(questions);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {

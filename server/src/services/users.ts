@@ -1,111 +1,49 @@
 import { QueryError } from 'mysql2';
-
+import { TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
-import { TUserPartial, TUserPublic, TUserRegistration } from '@type/schemas/user';
-
-import { DEFAULT_ACCESS_ROLE_ID } from '@configs/auth';
+import { TUserEdit, TUserPublic, TUserRegistration } from '@type/schemas/user';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
-import { concat } from '@utils/concat';
+import { DEFAULT_ACCESS_ROLE_ID } from '@configs/auth';
+import { USER_SQL } from '@static/sql/user';
+
 import { hashPassword } from '@utils/hashPassword';
 
 import { sqlPool } from '@configs/sqlPool';
+import { log } from '@configs/logger';
+
+const { createSql, readSql, updateSql, deleteSql } = USER_SQL;
 
 interface UsersService {
-    getUsers: (
-        ...userIdentifiers: Array<number | string>
-    ) => Promise<TPayloadResponse<TUserPublic[]>>;
+    getUsers: (userIdentifiers: Array<number | string>) => Promise<TPayloadResponse<TUserPublic[]>>;
     registerUser: (userData: TUserRegistration) => Promise<TResponse>;
-    editUser: (userData: TUserPartial) => Promise<TPayloadResponse<TUserPublic>>;
+    editUser: (userData: TUserEdit) => Promise<TPayloadResponse<TUserPublic>>;
     deleteUser: (userId: number) => Promise<TResponse>;
 }
 
 class UsersServiceImpl implements UsersService {
-    public deleteUser = async (userId: number): Promise<TResponse> => {
-        const sql = {
-            selectUserEmail: `SELECT email
-                        FROM tbl_users
-                        WHERE user_id = ?`,
-            deleteUser: `DELETE
-                   FROM tbl_users
-                   WHERE user_id = ?`
-        };
-        const dbUserEmailResponse = await sqlPool.query(sql.selectUserEmail, userId);
-        const [[dbUserEmail]] = dbUserEmailResponse;
-        if (!dbUserEmail) throw new DataDeletionError(`No user found, id: '${userId}'`);
-
-        const { email } = dbUserEmail;
-        await sqlPool.query(sql.deleteUser, userId);
-
-        return new Promise<TResponse>((resolve) =>
-            resolve({
-                message: `Successfully deleted user, email: '${email}'`
-            })
-        );
-    };
-
-    public getUsers = async (
-        ...userIdentifiers: Array<number | string>
-    ): Promise<TPayloadResponse<TUserPublic[]>> => {
-        const sql = `SELECT u.user_id AS userId,
-                        ur.name   AS role,
-                        u.email,
-                        u.username,
-                        u.name,
-                        u.about,
-                        u.group
-                 FROM (SELECT user_id,
-                              role_id,
-                              name,
-                              email,
-                              password,
-                              username,
-                              about,
-                              \`group\`
-                       FROM tbl_users
-                       WHERE ${
-                           typeof [userIdentifiers] === 'string' ? 'username' : 'user_id'
-                       } IN (${userIdentifiers.toString()})) AS u
-                          JOIN tbl_user_roles ur ON ur.role_id = u.role_id`;
-
-        const dbUsersResponse = await sqlPool.query(sql, userIdentifiers);
-        const [dbUsers] = dbUsersResponse as any[];
-        if (!dbUsers.length)
-            throw new NoDataError(
-                `No users found, identifiers: '${JSON.stringify(userIdentifiers)}'`
-            );
-
-        const payload = dbUsers as TUserPublic[];
-        return {
-            message: `Successfully got users`,
-            payload
-        };
-    };
-
     public registerUser = async (userData: TUserRegistration): Promise<TResponse> => {
+        const { insertUser } = createSql;
         const { email, username, password, passwordConfirm, name, group, about } = userData;
-
-        const sql = `INSERT INTO tbl_users(role_id, name, email, password, username, about, \`group\`)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
         if (password !== passwordConfirm) throw new DataAddingError("Passwords don't match");
 
         const passwordHash = hashPassword(password);
-
         try {
-            await sqlPool.query(sql, [
+            const dbUserResponse: TModifyQueryResponse = await sqlPool.query(insertUser, [
                 DEFAULT_ACCESS_ROLE_ID,
                 name.trim(),
                 email.trim(),
-                passwordHash,
+                passwordHash.trim(),
                 username.trim(),
-                about ? about.trim() : null,
+                about === undefined ? null : about.trim(),
                 group.trim()
             ]);
+            log.debug(dbUserResponse);
         } catch (error: unknown) {
             const { code } = error as QueryError;
             if (code === 'ER_DUP_ENTRY')
@@ -115,33 +53,71 @@ class UsersServiceImpl implements UsersService {
 
         return {
             message: `Successfully registered new user, email: ${userData.username}`
-        } as TResponse;
+        };
     };
 
-    public editUser = async (userData: TUserPartial): Promise<TPayloadResponse<TUserPublic>> => {
-        const { userId, email, username, password, passwordConfirm, name, group, about } = userData;
+    public getUsers = async (
+        userIdentifiers: Array<number | string>
+    ): Promise<TPayloadResponse<TUserPublic[]>> => {
+        const { getSelectUsers } = readSql;
+
+        const selectUsersSql = getSelectUsers(userIdentifiers);
+        const dbUsersResponse: TReadQueryResponse = await sqlPool.query(
+            selectUsersSql,
+            userIdentifiers
+        );
+        const [dbUsers] = dbUsersResponse;
+        if (!dbUsers.length) {
+            throw new NoDataError(
+                `No users found, identifiers: '${JSON.stringify(userIdentifiers)}'`
+            );
+        }
+
+        const payload = dbUsers as TUserPublic[];
+        return {
+            message: `Successfully got users`,
+            payload
+        };
+    };
+
+    public editUser = async (userData: TUserEdit): Promise<TPayloadResponse<TUserPublic>> => {
+        const { getUpdateUsers } = updateSql;
+        const { passwordConfirm, ...userCommon } = userData;
+        const { userId, password } = userCommon;
 
         if (password !== passwordConfirm) throw new DataModificationError("Passwords don't match");
 
-        const sql = `UPDATE tbl_users
-                 SET ${concat([
-                     email ? "email = '" + email.trim() + "'" : '',
-                     username ? "username = '" + username.trim() + "'" : '',
-                     password ? "password = '" + hashPassword(password) + "'" : '',
-                     name ? "name = '" + name.trim() + "'" : '',
-                     group ? "`group` = '" + group.trim() + "'" : '',
-                     about ? "about = '" + about.trim() + "'" : ''
-                 ])}
-                 WHERE user_id = ?`;
+        const passwordHash = password ? hashPassword(password) : undefined;
+        const updateUsersSql = getUpdateUsers({ ...userCommon, passwordHash });
+        const dbUserResponse: TModifyQueryResponse = await sqlPool.query(updateUsersSql);
+        log.debug(dbUserResponse);
 
-        await sqlPool.query(sql, [userId]);
         const {
             payload: [user]
-        } = await this.getUsers(userId);
+        } = await this.getUsers([userId]);
 
         return {
             message: '',
             payload: user
+        };
+    };
+
+    public deleteUser = async (userId: number): Promise<TResponse> => {
+        const { selectUserEmail, deleteUser } = deleteSql;
+
+        const dbUserEmailResponse: TReadQueryResponse = await sqlPool.query(
+            selectUserEmail,
+            userId
+        );
+        const [[dbUserEmail]] = dbUserEmailResponse;
+        if (!dbUserEmail) throw new DataDeletionError(`No user found, id: '${userId}'`);
+
+        const { email } = dbUserEmail;
+        const dbUserResponse: TModifyQueryResponse = await sqlPool.query(deleteUser, userId);
+        log.debug(dbUserResponse);
+
+        return {
+            message: `Successfully deleted user, email: '${email}'`
         };
     };
 }

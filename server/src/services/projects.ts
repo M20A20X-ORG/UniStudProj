@@ -1,6 +1,5 @@
 import { QueryError } from 'mysql2';
-
-import { TDependency } from '@type/sql';
+import { TDependency, TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
 import { TPayloadResponse, TResponse } from '@type/schemas/response';
 import {
     TProject,
@@ -16,11 +15,16 @@ import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataDeletionError } from '@exceptions/DataDeletionError';
 import { NoDataError } from '@exceptions/NoDataError';
 
-import { sqlPool } from '@configs/sqlPool';
 import { PROJECT_SQL } from '@static/sql/projects';
+import { COMMON_SQL } from '@static/sql/common';
+
 import { updateDependent } from '@utils/updateDependent';
 
+import { sqlPool } from '@configs/sqlPool';
+import { log } from '@configs/logger';
+
 const { readSql, deleteSql, createSql, updateSql } = PROJECT_SQL;
+const { getSelectLastInsertId } = COMMON_SQL;
 
 interface ProjectsService {
     getProjects: (...projectIds: number[]) => Promise<TPayloadResponse<TProject[]>>;
@@ -31,16 +35,33 @@ interface ProjectsService {
 
 class ProjectsServiceImpl implements ProjectsService {
     public deleteProject = async (projectId: number): Promise<TResponse> => {
-        const { selectProjectName, deleteProject, deleteProjectUsers, deleteProjectTags } =
-            deleteSql;
+        const { selectProjectName, deleteProject, deleteProjectUsers, deleteProjectTags }
+            = deleteSql;
 
-        const dbProjectNameResponse = await sqlPool.query(selectProjectName, projectId);
+        const dbProjectNameResponse: TReadQueryResponse = await sqlPool.query(
+            selectProjectName,
+            projectId
+        );
         const [[dbProjectName]] = dbProjectNameResponse;
         if (!dbProjectName) throw new DataDeletionError(`No project found, id: '${projectId}'`);
 
-        await sqlPool.query(deleteProject, projectId);
-        await sqlPool.query(deleteProjectUsers, projectId);
-        await sqlPool.query(deleteProjectTags, projectId);
+        const dbDeleteProjectResponse: TModifyQueryResponse = await sqlPool.query(
+            deleteProject,
+            projectId
+        );
+        log.debug(dbDeleteProjectResponse);
+
+        const dbDeleteUsersResponse: TModifyQueryResponse = await sqlPool.query(
+            deleteProjectUsers,
+            projectId
+        );
+        log.debug(dbDeleteUsersResponse);
+
+        const dbDeleteTagsResponse: TModifyQueryResponse = await sqlPool.query(
+            deleteProjectTags,
+            projectId
+        );
+        log.debug(dbDeleteTagsResponse);
 
         const { name } = dbProjectName as TProject;
         return { message: `Successfully deleted project, name: '${name}'` };
@@ -49,19 +70,24 @@ class ProjectsServiceImpl implements ProjectsService {
     public getProjects = async (...projectIds: number[]): Promise<TPayloadResponse<TProject[]>> => {
         const { getSelectProjects, getSelectParticipants, getSelectTags } = readSql;
 
-        const dbProjectResponse = await sqlPool.query(getSelectProjects(projectIds));
-        const [dbProjects] = dbProjectResponse as any[];
+        const selectProjectsSql = getSelectProjects(projectIds);
+        const dbProjectResponse: TReadQueryResponse = await sqlPool.query(selectProjectsSql);
+        const [dbProjects] = dbProjectResponse;
         if (!dbProjects.length) throw new NoDataError(`No projects found, id: '${projectIds}'`);
 
         const projects = dbProjects as TProject[];
 
-        const dbParticipantsResponse = await sqlPool.query(getSelectParticipants(projectIds));
-        const [dbParticipants] = dbParticipantsResponse as any[];
-        if (dbParticipants.length)
+        const selectParticipantsSql = getSelectParticipants(projectIds);
+        const dbParticipantsResponse: TReadQueryResponse = await sqlPool.query(
+            selectParticipantsSql
+        );
+        const [dbParticipants] = dbParticipantsResponse;
+        if (dbParticipants.length) {
             projects.forEach((project) => {
-                const participants = dbParticipants as Array<
-                    TDependency<TProjectId, TProjectParticipant>
-                >;
+                const participants = dbParticipants as TDependency<
+                    TProjectId,
+                    TProjectParticipant
+                >[];
                 project.participants = participants
                     .filter((participant) => participant.projectId === project.projectId)
                     .map((participant) => {
@@ -69,12 +95,14 @@ class ProjectsServiceImpl implements ProjectsService {
                         return participant;
                     });
             });
+        }
 
-        const dbTagsResponse = await sqlPool.query(getSelectTags(projectIds));
-        const [dbTags] = dbTagsResponse as any[];
+        const selectTagsSql: string = getSelectTags(projectIds);
+        const dbTagsResponse: TReadQueryResponse = await sqlPool.query(selectTagsSql);
+        const [dbTags] = dbTagsResponse;
         if (dbTags.length)
             projects.forEach((project) => {
-                const tags = dbTags as Array<TDependency<TProjectId, TTag>>;
+                const tags = dbTags as TDependency<TProjectId, TTag>[];
                 project.tags = tags
                     .filter((tag) => tag.projectId === project.projectId)
                     .map((tag) => {
@@ -91,13 +119,12 @@ class ProjectsServiceImpl implements ProjectsService {
 
     public createProject = async (projectData: TProjectCreation): Promise<TResponse> => {
         const { name, dateStart, dateEnd, participantIds, tagIds, description } = projectData;
-        const { insertProject, selectNewProjectId, getInsertUsersSql, getInsertTagsSql } =
-            createSql;
+        const { insertProject, getInsertUsersSql, getInsertTagsSql } = createSql;
 
         const connection = await sqlPool.getConnection();
         try {
             await connection.beginTransaction();
-            await connection.query(insertProject, [
+            const dbProjectResponse: TModifyQueryResponse = await connection.query(insertProject, [
                 name,
                 participantIds.length,
                 tagIds.length,
@@ -105,19 +132,30 @@ class ProjectsServiceImpl implements ProjectsService {
                 dateStart,
                 dateEnd
             ]);
+            log.debug(dbProjectResponse);
 
-            const dbNewProjectIdResponse = await connection.query(selectNewProjectId);
+            const dbNewProjectIdResponse: TReadQueryResponse = await connection.query(
+                getSelectLastInsertId('projectId')
+            );
             const [[dbNewProjectId]] = dbNewProjectIdResponse;
             if (!dbNewProjectId) throw new DataAddingError("Can't add new project!");
             const { newProjectId } = dbNewProjectId as { newProjectId: number };
 
             if (participantIds.length) {
-                const insertProjectUsers = getInsertUsersSql(newProjectId, participantIds);
-                await connection.query(insertProjectUsers, newProjectId);
+                const insertProjectUsersSql = getInsertUsersSql(newProjectId, participantIds);
+                const dbProjectUsersResponse = await connection.query(
+                    insertProjectUsersSql,
+                    newProjectId
+                );
+                log.debug(dbProjectUsersResponse);
             }
             if (tagIds.length) {
-                const insertProjectTags = getInsertTagsSql(newProjectId, tagIds);
-                await connection.query(insertProjectTags, newProjectId);
+                const insertProjectTagsSql = getInsertTagsSql(newProjectId, tagIds);
+                const dbProjectTagsResponse = await connection.query(
+                    insertProjectTagsSql,
+                    newProjectId
+                );
+                log.debug(dbProjectTagsResponse);
             }
 
             await connection.commit();
@@ -146,12 +184,17 @@ class ProjectsServiceImpl implements ProjectsService {
             deleteTagIds,
             ...projectCommonData
         } = projectData;
-        const { getUpdateProjectsSql, getUpdateParticipantsSql, getUpdateTagsSql } = updateSql;
+        const { getUpdateProjectSql, getUpdateParticipantsSql, getUpdateTagsSql } = updateSql;
 
         const connection = await sqlPool.getConnection();
         try {
             await connection.beginTransaction();
-            await connection.query(getUpdateProjectsSql({ projectId, ...projectCommonData }));
+            const updateProjectSql = getUpdateProjectSql({ projectId, ...projectCommonData });
+            const dbProjectResponse: TModifyQueryResponse = await connection.query(
+                updateProjectSql
+            );
+            log.debug(dbProjectResponse);
+
             await updateDependent<number>(
                 connection,
                 getUpdateTagsSql,
