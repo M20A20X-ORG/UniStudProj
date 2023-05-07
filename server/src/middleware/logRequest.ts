@@ -1,5 +1,5 @@
 import { RequestHandler } from 'express';
-import { log } from '@configs/logger';
+import { log } from '@configs/loggerConfig';
 
 export const logRequest: RequestHandler = (req, res, next) => {
     log.info(

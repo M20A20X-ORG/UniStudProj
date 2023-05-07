@@ -4,7 +4,7 @@ import { TGetSql, TModifyQueryResponse } from '@type/sql';
 
 import { DataModificationError } from '@exceptions/DataModificationError';
 
-import { log } from '@configs/logger';
+import { log } from '@configs/loggerConfig';
 
 const handleError = (
     error: unknown,

@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { TResponse } from '@type/schemas/response';
-import { log } from '@configs/logger';
+import { log } from '@configs/loggerConfig';
 
 export const sendResponse = (
     res: Response,

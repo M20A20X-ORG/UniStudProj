@@ -5,11 +5,11 @@ import express, { RequestHandler, static as exStatic } from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
-import { storageRoot } from '@configs/storage';
-import { ACCESS_ROLE, auth } from '@configs/auth';
-import { log } from '@configs/logger';
+import { appRouter } from './routers/appRouter';
+import { storageRoot } from '@configs/storageConfig';
+import { ACCESS_ROLE, auth } from '@configs/authConfig';
+import { log } from '@configs/loggerConfig';
 
-import { appRouter } from '@routes/index';
 import { logRequest } from '@middleware/logRequest';
 
 dotenv.config();
