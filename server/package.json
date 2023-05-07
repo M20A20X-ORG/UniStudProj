@@ -2,11 +2,11 @@
   "name": "unistudproj-server",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "src/server.ts",
   "scripts": {
     "build": "rm -rf dist/ && tsc && tsc-alias",
-    "start": "node dist/index.js",
-    "start:debug": "node --inspect dist/index.js",
+    "start": "node dist/server.js",
+    "start:debug": "node --inspect dist/server.js",
     "watch": "tsc-watch --onSuccess \"tsc-alias\"",
     "nodemon": "nodemon -x \"yarn start\"",
     "nodemon:debug": "nodemon -x \"yarn start:debug\"",
@@ -53,6 +53,7 @@
     "nodemon": "^2.0.22",
     "prettier": "^2.8.7",
     "tsc-alias": "^1.8.5",
+    "tsc-watch": "^6.0.4",
     "typescript": "^5.0.3"
   }
 }
