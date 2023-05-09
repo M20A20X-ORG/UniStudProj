@@ -1,0 +1,44 @@
+$max-screen-w: 1920px;
+
+@function mn($px) {
+  @return min(
+          100vw * $px / $max-screen-w,
+          $px
+  );
+}
+
+/* Common */
+$content-fz: 0.875em;
+$content-p: mn(70px);
+$content-par-indent: 48px;
+$default-ff: "DM Sans", sans-serif;
+$header-h: 60px;
+$header-fz: 1em;
+$footer-h: $header-h;
+$footer-fz: 0.5em;
+$main-elems-m-b: mn(15px);
+$nav-li-m-l: mn(15px);
+$nav-vl-height: 23px;
+$main-menu-w: 200px;
+
+/* Elements */
+$clickable-transform-hover: translateY(mn(1.5px));
+$clickable-transform-active: translateY(mn(2.5px));
+$h1-fz: 1.25em;
+$h2-fz: 1.11em;
+$h3-fz: 1em;
+$h1-m-b: 20px;
+$h2-m-b: 10px;
+$h3-m-b: 5px;
+$scrollbar-size: 1.04vw;
+$btn-w: 100px;
+$btn-large-w: 150px;
+$btn-h: 30px;
+
+/* Form */
+$input-h: mn(30px);
+$input-m: mn(25px);
+$input-text-l-p: mn(15px);
+$textarea-h: mn(80px);
+$fieldset-h-p: mn(20px);
+$fieldset-m-b: mn(20px);

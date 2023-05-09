@@ -1,0 +1,13 @@
+@use "./constants" as с;
+
+$vw-1-px: с.mn(1px);
+$bg-black: #000;
+$bg-grey-l0: #0B0B0B;
+$bg-grey-l1: #121212;
+$bg-grey-l2: #2F2F2F;
+$bg-white: #D8D8D8;
+$txt-white: $bg-white;
+$br-small: 5px;
+$br-medium: 15px;
+$br-large: 50px;
+$br-huge: 100px;
