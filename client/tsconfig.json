@@ -21,11 +21,17 @@
     "jsx": "react-jsx",
     "baseUrl": "src/",
     "paths": {
+      "configs/*": [
+        "configs/*"
+      ],
       "assets/*": [
         "assets/*"
       ],
       "styles/*": [
         "styles/*"
+      ],
+      "exceptions/*": [
+        "exceptions/*"
       ],
       "components/*": [
         "components/*"

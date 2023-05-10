@@ -8,3 +8,8 @@ export const PAGE_URL = {
     news: 'news',
     metrics: 'metrics'
 };
+
+export const API_ROOT = 'http://localhost:8000/';
+export const API_URL = {
+    login: 'auth/login'
+};
