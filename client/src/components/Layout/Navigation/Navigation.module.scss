@@ -1,0 +1,45 @@
+@use "styles/global.scss" as g;
+
+.navList {
+  display: flex;
+
+  li {
+    @extend %v-c-h-c;
+
+    position: relative;
+    padding: 0 g.$nav-li-p;
+
+    &::before {
+      position: absolute;
+      left: 0;
+      width: g.$vw-1-px;
+      height: g.$nav-vl-height;
+      background-color: g.$bg-white;
+      content: "";
+    }
+
+    &:first-of-type::before {
+      display: none;
+    }
+
+    span {
+      display: block;
+    }
+  }
+
+  &Vertical {
+    flex-direction: column;
+    align-items: center;
+
+    li::before {
+      top: 0;
+      left: unset;
+      width: g.$nav-hl-width;
+      height: g.$vw-1-px;
+    }
+
+    li {
+      padding: g.$nav-li-p 0;
+    }
+  }
+}

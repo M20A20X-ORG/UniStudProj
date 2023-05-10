@@ -1,0 +1,149 @@
+@use "styles/global.scss" as g;
+
+$menu-btn-border: 1px solid g.$bg-white;
+
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  color: g.$txt-white;
+  font-size: g.$content-fz;
+  font-family: g.$default-ff;
+
+  .menuBtn {
+    @extend %v-c-h-c;
+
+    width: g.mn(g.$btn-h);
+    height: g.mn(g.$btn-h);
+    margin-left: g.$btn-h;
+    padding: g.mn(7px);
+    background-color: g.$bg-grey-l1;
+    border-top: $menu-btn-border;
+    border-bottom: $menu-btn-border;
+    border-radius: g.$br-small;
+
+    &Lines {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-top: $menu-btn-border;
+      border-bottom: $menu-btn-border;
+
+      &::before {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: g.$bg-white;
+        content: '';
+      }
+    }
+  }
+}
+
+.container {
+  @extend %fd-col;
+
+  flex-grow: 1;
+  background-color: g.$bg-grey-l0;
+}
+
+.header {
+  @extend %v-c-h-sb;
+
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: g.$header-h;
+  padding: 0 g.$content-p;
+  color: g.$txt-white;
+  font-size: g.$header-fz;
+  font-style: italic;
+  background-color: g.$bg-black;
+}
+
+.nav {
+  height: 100%;
+}
+
+.navigation {
+  display: flex;
+  align-items: inherit;
+}
+
+.main {
+  display: flex;
+  flex-grow: 1;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  padding: g.$content-p;
+}
+
+.footer {
+  @extend %fd-col;
+
+  align-items: flex-start;
+  justify-content: center;
+  height: g.$footer-h;
+  padding: 0 g.$content-p;
+  color: g.$txt-white;
+  font-size: g.$footer-fz;
+  background-color: g.$bg-black;
+
+  .heart,
+  .copyright {
+    color: inherit;
+  }
+
+  &:hover {
+    .heart {
+      color: cyan;
+    }
+
+    .copyright {
+      color: yellow;
+    }
+  }
+}
+
+
+// Menu
+
+.menu {
+  @extend %fd-col;
+
+  flex-shrink: 0;
+  width: g.$main-menu-w;
+  color: inherit;
+  font-size: inherit;
+  background-color: g.$bg-grey-l1;
+
+  &Head,
+  &Foot {
+    height: g.$footer-h;
+    font-size: g.$footer-fz;
+    background-color: g.$bg-black;
+  }
+
+  &Head {
+    @extend %v-c;
+  }
+
+  &Container {
+    flex-grow: 1;
+    padding: g.mn(30px);
+  }
+
+  &Foot {
+    @extend %fd-col, %v-c-h-c ;
+  }
+}
+
+.menuLinks {
+  padding: g.mn(20px);
+  background-color: g.$bg-grey-l0;
+  border-radius: g.$br-medium;
+}
