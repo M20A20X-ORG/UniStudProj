@@ -6,6 +6,20 @@
 @use "./constants" as c;
 @use "./theme" as t;
 
+body {
+  @extend %fd-col, %v-c-h-c;
+}
+
+:global(.modal) {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  padding: c.$modal-p-v c.$modal-p-h;
+  background-color: t.$bg-grey-l1;
+  border: t.$vw-1-px solid t.$bg-grey-l0;
+  border-radius: t.$br-large;
+}
+
 /* Anchor */
 :global(.anchor) {
   scroll-margin-top: c.$header-h;
@@ -71,7 +85,6 @@ section {
     width: c.$btn-large-w;
   }
 }
-
 
 
 /* Headers / p */

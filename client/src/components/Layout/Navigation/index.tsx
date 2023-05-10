@@ -31,10 +31,10 @@ export const Navigation: FC<NavProps> = (props) => {
     const authContext = useContext(AuthContext);
 
     const getNavLinkElems = () => {
-        const { href, loggedName, defaultName } = profileLink;
+        const { href, loggedName, name } = profileLink;
         const profileLinks = (
             <li key={JSON.stringify(profileLink)}>
-                <LinkElem href={href}>{authContext?.isLoggedIn ? loggedName : defaultName}</LinkElem>
+                <LinkElem href={href}>{authContext?.isLoggedIn ? loggedName : name}</LinkElem>
             </li>
         );
         const links = navLinks.map((link) => (

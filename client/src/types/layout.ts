@@ -3,9 +3,7 @@ export type TNavLink = {
     name: string;
 };
 
-export type TAuthNavLink = {
-    href: string;
-    defaultName: string;
+export type TAuthNavLink = TNavLink & {
     loggedName: string;
 };
 

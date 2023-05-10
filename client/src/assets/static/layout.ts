@@ -12,9 +12,9 @@ export const LAYOUT_COMMON: TLayoutCommon = {
 
 export const LINKS: TLinks = {
     profile: {
-        href: PAGE_URL.profile,
-        defaultName: 'Log In',
-        loggedName: 'Profile'
+        name: 'Log In',
+        loggedName: 'Profile',
+        href: PAGE_URL.profile
     },
     root: {
         href: PAGE_URL.root,

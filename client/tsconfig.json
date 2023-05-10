@@ -36,6 +36,9 @@
       "components/*": [
         "components/*"
       ],
+      "providers/*": [
+        "providers/*"
+      ],
       "types/*": [
         "types/*"
       ],

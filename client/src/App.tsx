@@ -1,14 +1,17 @@
 import React from 'react';
 
-import { AuthProvider } from 'components/providers/Auth.provider';
-import { RouterProvider } from 'components/providers/Router.provider';
+import { ModalProvider } from 'providers/Modal.provider';
+import { AuthProvider } from 'providers/Auth.provider';
+import { RouterProvider } from 'providers/Router.provider';
 
 import 'styles/global.scss';
 
 const App = () => (
-    <AuthProvider>
-        <RouterProvider />
-    </AuthProvider>
+    <ModalProvider>
+        <AuthProvider>
+            <RouterProvider />
+        </AuthProvider>
+    </ModalProvider>
 );
 
 export default App;
