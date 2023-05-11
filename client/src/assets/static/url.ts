@@ -11,5 +11,6 @@ export const PAGE_URL = {
 
 export const API_ROOT = 'http://localhost:8000/';
 export const API_URL = {
-    login: 'auth/login'
+    login: 'auth/login',
+    register: 'users/register'
 };

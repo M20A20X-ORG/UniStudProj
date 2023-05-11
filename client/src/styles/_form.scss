@@ -1,0 +1,50 @@
+@use "./constants" as c;
+@use "./theme" as t;
+@use "./placeholders";
+
+:global(.formWrapper) {
+  @extend %fd-col;
+
+  align-items: center;
+  margin-bottom: c.$input-m;
+  padding: c.$modal-p-v c.$modal-p-h;
+  color: t.$txt-white;
+  font-size: c.$content-fz;
+  font-family: c.$default-ff;
+  background-color: t.$bg-grey-l1;
+  border: t.$vw-1-px solid t.$bg-grey-l0;
+  border-radius: c.mn(t.$br-large);
+}
+
+form {
+  @extend %fd-col;
+
+  align-items: center;
+}
+
+fieldset {
+  @extend %fd-col;
+
+  margin-bottom: c.$input-m;
+}
+
+input {
+  @extend %input;
+
+  color: t.$txt-white;
+  caret-color: t.$bg-white;
+}
+
+textarea {
+  @extend %input;
+
+  color: t.$txt-white;
+  height: c.$textarea-h;
+  padding-top: c.$input-text-l-p;
+  resize: vertical;
+
+  &::placeholder {
+    display: flex;
+    justify-content: space-around;
+  }
+}

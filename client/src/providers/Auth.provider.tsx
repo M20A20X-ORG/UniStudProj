@@ -1,8 +1,12 @@
-import React, { FC, ReactNode, useState } from 'react';
-import { TAuthLogin, TAuthLogout } from 'types/auth.context';
-import { TUser } from 'types/user';
+import React, { FC, ReactNode, useContext, useState } from 'react';
+import { TPayloadResponse } from 'types/schemas/serverResponse';
+import { TModalMessage } from 'types/context/modal.context';
+import { TAuthState } from 'types/context/auth.context';
+import { TAuth, TUser, TUserJson } from 'types/schemas/auth';
+import { TUserLogIn } from 'types/requests/login';
 
-import { AUTH_INITIAL, AuthContext } from 'context/Auth.context';
+import { ModalContext } from 'context/Modal.context';
+import { AuthContext } from 'context/Auth.context';
 
 import { validateSchema } from 'utils/validateSchema';
 import { getApi } from 'utils/getApi';
@@ -13,46 +17,52 @@ interface AuthProviderProps {
 
 export const AuthProvider: FC<AuthProviderProps> = (props) => {
     const { children } = props;
+    const [authState, setAuthState] = useState<TAuthState>({ user: null, isLoggedIn: false });
 
-    /// ----- State ----- ///
-    const [authState, setAuthState] = useState(AUTH_INITIAL);
-    const setLoginPending = (isLoginPending: boolean) => setAuthState((prev) => ({ ...prev, isLoginPending }));
-    const setLoginError = (loginError: string) => setAuthState((prev) => ({ ...prev, loginError }));
+    const modalContext = useContext(ModalContext);
 
-    /// ----- Auth ----- ///
-    const logout: TAuthLogout = async () => setAuthState(AUTH_INITIAL);
+    /// ----- Handlers ----- ///
+    const logout = (): void => setAuthState({ user: null, isLoggedIn: false });
 
-    const login: TAuthLogin = async (username, password) => {
-        setLoginPending(true);
+    const login = async (login: TUserLogIn): Promise<TModalMessage> => {
+        if (authState.isLoggedIn) {
+            modalContext?.closeModal('custom');
+            return { message: 'User already logged in!', type: 'error' };
+        }
+
         const loginApi = getApi('login');
+        const data: TUserJson<TUserLogIn> = { user: login };
+        const requestInit: RequestInit = {
+            method: 'POST',
+            headers: { 'Content-type': 'application/json;charset=utf-8' },
+            body: JSON.stringify(data)
+        };
+
+        let user = null,
+            message = null;
 
         try {
-            const response = await fetch(loginApi, {
-                method: 'post',
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify({
-                    username,
-                    password
-                })
-            });
+            const response = await fetch(loginApi, requestInit);
+            const text = await response.text();
+            if (!text) return { message: 'Empty response from server', type: 'error' };
 
-            if (!response.ok) setLoginError(`Error receiving from '${loginApi}': ${response.statusText}`);
+            const json = JSON.parse(text) as TPayloadResponse<TUser> & TAuth;
+            message = json.message;
 
-            const json = await response.json();
-            const user = json.user;
+            localStorage.setItem('accessToken', json.accessToken);
+            localStorage.setItem('refreshToken', json.refreshToken);
 
-            const validationResult = validateSchema<TUser>(user, '/schema/user');
-            if (validationResult) {
-                setLoginError(`Incorrect response from '${loginApi}': ${validationResult.message}`);
-                return;
-            }
+            if (!response.ok) return { message, type: 'error' };
 
-            setAuthState({ user, isLoginPending: false, isLoggedIn: true, loginError: '' });
-        } catch (error) {
-            if (error instanceof Error) setLoginError(error.message);
+            user = json.payload;
+            const validationResult = validateSchema<TUser>(user, 'http://example.com/schema/user');
+            if (validationResult)
+                return { message: `Incorrect response from server: ${validationResult.message}`, type: 'error' };
+        } catch (error: unknown) {
+            if (error instanceof Error) return { message: error.message, type: 'error' };
         }
+        setAuthState({ user: user as TUser, isLoggedIn: true });
+        return { message: message as string, type: 'info' };
     };
 
     return <AuthContext.Provider value={{ ...authState, login, logout }}>{children}</AuthContext.Provider>;

@@ -3,6 +3,7 @@
 @forward "./fonts";
 @forward "./constants";
 @forward "./theme";
+@forward "./form";
 @use "./constants" as c;
 @use "./theme" as t;
 
@@ -13,11 +14,6 @@ body {
 :global(.modal) {
   position: absolute;
   z-index: 2;
-  display: flex;
-  padding: c.$modal-p-v c.$modal-p-h;
-  background-color: t.$bg-grey-l1;
-  border: t.$vw-1-px solid t.$bg-grey-l0;
-  border-radius: t.$br-large;
 }
 
 /* Anchor */
@@ -36,6 +32,10 @@ body {
   }
 
   cursor: pointer;
+}
+
+span.clickable {
+  display: block;
 }
 
 /* Content section w1240px */
@@ -73,12 +73,14 @@ section {
 }
 
 .btn {
-  @extend %v-c;
+  @extend %v-c-h-c;
 
-  width: c.mn(c.$btn-w);
-  height: c.mn(c.$btn-h);
+  width: c.$btn-w;
+  height: c.$btn-h;
   color: t.$txt-white;
   background-color: t.$bg-grey-l0;
+  border-top: t.$btn-border-h;
+  border-bottom: t.$btn-border-h;
   border-radius: t.$br-medium;
 
   &Large {
@@ -86,18 +88,26 @@ section {
   }
 }
 
+span, button {
+  color: t.$txt-white;
+  font-size: c.$content-fz;
+  font-family: c.$default-ff;
+}
 
 /* Headers / p */
 
 h1 {
+  margin-bottom: c.$h1-m-b;
   font-size: c.$h1-fz;
 }
 
 h2 {
+  margin-bottom: c.$h2-m-b;
   font-size: c.$h2-fz;
 }
 
 h3 {
+  margin-bottom: c.$h3-m-b;
   font-size: c.$h3-fz;
 }
 

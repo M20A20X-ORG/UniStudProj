@@ -1,5 +1,5 @@
 import Ajv from 'ajv';
-import { TSchema, TSchemaFormatGeneral, TSchemaFormats } from 'types/schema';
+import { TSchema, TSchemaFormatGeneral, TSchemaFormats } from 'types/schemas/schema';
 import { SCHEMA_FORMATS, SCHEMAS } from 'schemas/index';
 
 interface AjvConfig {

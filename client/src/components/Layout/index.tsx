@@ -1,13 +1,13 @@
-import React, { FC, useContext, useState } from 'react';
+import React, { FC, useContext, useEffect, useState } from "react";
 import { TLayoutCommon, TLinks, TNavLink } from 'types/layout';
 
 import { Link, Outlet } from 'react-router-dom';
 import cn from 'classnames';
 
 import { ModalContext } from 'context/Modal.context';
+import { AuthContext } from 'context/Auth.context';
 
 import { Navigation } from './Navigation';
-
 import s from './Layout.module.scss';
 
 export interface LayoutProps {
@@ -21,20 +21,31 @@ export const Layout: FC<LayoutProps> = (props) => {
     const { siteShort, org, dev } = common.names;
 
     const modalContext = useContext(ModalContext);
+    const authContext = useContext(AuthContext);
 
     const [isMenuOpen, setMenuOpen] = useState(false);
+
+    const btnLogoutElem = (
+        <div
+            className={cn('clickable', 'btn', s.btnLogout)}
+            onClick={() => authContext?.logout()}
+        >
+            Logout
+        </div>
+    );
     const menuBtnElem = (
         <div
             onClick={() => setMenuOpen(!isMenuOpen)}
-            className={cn('btn', 'clickable', s.menuBtn)}
+            className={cn('btn', 'clickable', s.btnMenu)}
         >
-            <span className={s.menuBtnLines}></span>
+            <span className={s.btnMenuLines}></span>
         </div>
     );
 
     return (
         <>
-            {modalContext?.modalElem}
+            {modalContext?.modalElem.custom}
+            {modalContext?.modalElem.message}
             <div className={s.wrapper}>
                 <div className={s.container}>
                     <header className={s.header}>
@@ -76,6 +87,8 @@ export const Layout: FC<LayoutProps> = (props) => {
                                     isVertical
                                 />
                             </div>
+
+                            {authContext?.isLoggedIn ? btnLogoutElem : null}
                         </div>
                         <div className={s.menuFoot}>
                             <span>Contact developer:</span>

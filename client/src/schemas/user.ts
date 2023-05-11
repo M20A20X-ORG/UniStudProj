@@ -1,8 +1,8 @@
 import { JSONSchemaType } from 'ajv';
-import { TUser } from 'types/user';
+import { TUser } from 'types/schemas/auth';
 
 export const userSchema: JSONSchemaType<TUser> = {
-    $id: 'http://example.com/schemas/user',
+    $id: 'http://example.com/schema/user',
     type: 'object',
     properties: {
         userId: { type: 'number', minimum: 1 },
@@ -24,6 +24,5 @@ export const userSchema: JSONSchemaType<TUser> = {
 export const USER_FORMAT = {
     userFullName: /^([A-Z][a-z]+\s?){3,}$/i,
     userUsername: /^[a-z\d]{5,}$/,
-    userPassword: /^[\w\W]{6,}$/,
     userEmail: /^[a-z\d]+@[a-z\d]+.[a-z\d]+$/
 };

@@ -4,7 +4,10 @@ import { TLinks, TNavLink } from 'types/layout';
 import { NavLink } from 'react-router-dom';
 import cn from 'classnames';
 
+import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
+
+import { LogInForm } from 'components/modals/login';
 
 import s from './Navigation.module.scss';
 
@@ -29,25 +32,31 @@ interface NavProps {
 export const Navigation: FC<NavProps> = (props) => {
     const { profileLink, navLinks, isVertical } = props;
     const authContext = useContext(AuthContext);
+    const modalContext = useContext(ModalContext);
 
     const getNavLinkElems = () => {
         const { href, loggedName, name } = profileLink;
-        const profileLinks = (
+        const profileLinkElem = (
             <li key={JSON.stringify(profileLink)}>
-                <LinkElem href={href}>{authContext?.isLoggedIn ? loggedName : name}</LinkElem>
+                <LinkElem
+                    href={href}
+                    clickHandler={(event) => {
+                        if (!authContext?.isLoggedIn) {
+                            event.preventDefault();
+                            modalContext?.openModal(<LogInForm />, 'custom');
+                        }
+                    }}
+                >
+                    {authContext?.isLoggedIn ? loggedName : name}
+                </LinkElem>
             </li>
         );
         const links = navLinks.map((link) => (
             <li key={JSON.stringify(link)}>
-                <LinkElem
-                    href={link.href}
-                    clickHandler={() => {}}
-                >
-                    {link.name}
-                </LinkElem>
+                <LinkElem href={link.href}>{link.name}</LinkElem>
             </li>
         ));
-        return [...links, profileLinks];
+        return [...links, profileLinkElem];
     };
 
     return <ul className={cn({ [s.navListVertical]: isVertical }, s.navList)}>{getNavLinkElems()}</ul>;

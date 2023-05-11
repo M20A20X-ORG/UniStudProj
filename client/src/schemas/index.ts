@@ -1,4 +1,4 @@
-import { TSchema, TSchemaFormatGeneral } from 'types/schema';
+import { TSchema, TSchemaFormatGeneral } from 'types/schemas/schema';
 
 import { USER_FORMAT, userSchema } from './user';
 

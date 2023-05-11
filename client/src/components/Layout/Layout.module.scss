@@ -1,7 +1,5 @@
 @use "styles/global.scss" as g;
 
-$menu-btn-border: 1px solid g.$bg-white;
-
 .wrapper {
   display: flex;
   width: 100vw;
@@ -10,16 +8,16 @@ $menu-btn-border: 1px solid g.$bg-white;
   font-size: g.$content-fz;
   font-family: g.$default-ff;
 
-  .menuBtn {
+  .btnMenu {
     @extend %v-c-h-c;
 
-    width: g.mn(g.$btn-h);
-    height: g.mn(g.$btn-h);
+    width: g.$btn-h;
+    height: g.$btn-h;
     margin-left: g.$btn-h;
-    padding: g.mn(7px);
+    padding: 7px;
     background-color: g.$bg-grey-l1;
-    border-top: $menu-btn-border;
-    border-bottom: $menu-btn-border;
+    border-top: g.$btn-border-h;
+    border-bottom: g.$btn-border-h;
     border-radius: g.$br-small;
 
     &Lines {
@@ -27,8 +25,8 @@ $menu-btn-border: 1px solid g.$bg-white;
       display: block;
       width: 100%;
       height: 100%;
-      border-top: $menu-btn-border;
-      border-bottom: $menu-btn-border;
+      border-top: g.$btn-border-h;
+      border-bottom: g.$btn-border-h;
 
       &::before {
         position: absolute;
@@ -121,6 +119,7 @@ $menu-btn-border: 1px solid g.$bg-white;
   color: inherit;
   font-size: inherit;
   background-color: g.$bg-grey-l1;
+  z-index: 2;
 
   &Head,
   &Foot {
@@ -147,4 +146,8 @@ $menu-btn-border: 1px solid g.$bg-white;
   padding: g.mn(20px);
   background-color: g.$bg-grey-l0;
   border-radius: g.$br-medium;
+}
+
+.btnLogout {
+  margin: 15px auto 0 auto;
 }

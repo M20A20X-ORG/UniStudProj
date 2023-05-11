@@ -17,12 +17,13 @@ $header-fz: 1em;
 $footer-h: $header-h;
 $footer-fz: 0.5em;
 $main-elems-m-b: mn(15px);
-$modal-p-v: mn(50px);
-$modal-p-h: mn(200px);
-$nav-li-p: mn(15px);
+$modal-p-v: 30px;
+$modal-p-h: 100px;
+$nav-li-p: 15px;
 $nav-vl-height: 23px;
 $nav-hl-width: 100px;
 $main-menu-w: 200px;
+$error-msg-max-w: 300px;
 
 /* Elements */
 $clickable-transform-hover: translateY(mn(1.5px));
@@ -36,12 +37,11 @@ $h3-m-b: 5px;
 $scrollbar-size: 1.04vw;
 $btn-w: 100px;
 $btn-large-w: 150px;
-$btn-h: 30px;
+$btn-h: 25px;
 
 /* Form */
-$input-h: mn(30px);
-$input-m: mn(25px);
-$input-text-l-p: mn(15px);
-$textarea-h: mn(80px);
-$fieldset-h-p: mn(20px);
-$fieldset-m-b: mn(20px);
+$input-h: 30px;
+$input-m: 15px;
+$input-text-l-p: 15px;
+$input-fz: 0.75em;
+$textarea-h: 80px;

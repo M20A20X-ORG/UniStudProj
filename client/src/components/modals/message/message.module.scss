@@ -1,0 +1,35 @@
+@use "styles/global.scss" as g;
+
+.wrapper {
+  right: 5%;
+  bottom: 5%;
+  z-index: 3;
+  max-width: g.$error-msg-max-w;
+  overflow: hidden;
+  border-radius: g.$br-small;
+}
+
+.container {
+  position: relative;
+}
+
+.text {
+  display: block;
+  padding: 5px 30px;
+  font-size: 0.75em;
+}
+
+.timeBar {
+  position: absolute;
+  bottom: 1px;
+  height: 1px;
+  background-color: #fff;
+}
+
+.error {
+  background-color: g.$bg-red;
+}
+
+.info {
+  background-color: g.$bg-blue;
+}

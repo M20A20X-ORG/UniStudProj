@@ -1,0 +1,18 @@
+@use "styles/global.scss" as g;
+
+.loginForm {
+  margin-bottom: g.$input-m;
+
+  fieldset {
+    flex-direction: row;
+    margin-bottom: 0;
+  }
+
+  input:first-of-type {
+    margin-right: g.$input-m;
+  }
+}
+
+.register {
+  font-size: 0.7em;
+}
