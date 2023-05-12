@@ -13,7 +13,8 @@ export const API_ROOT = 'http://localhost:8000/';
 export const API_URL = {
     login: 'auth/login',
     registerUser: 'users/register',
-    getUser: 'users/get',
+    getUsers: 'users/get',
     editUser: 'users/edit',
+    getProjectTags: 'projects/tags/get',
     uploadResource: 'resources/create'
 };

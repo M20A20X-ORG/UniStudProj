@@ -13,5 +13,3 @@ export type TUser = {
     about?: string;
     group: string;
 };
-
-export type TUserJson<T> = { user: T };

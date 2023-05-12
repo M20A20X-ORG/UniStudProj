@@ -1,8 +1,8 @@
 import React, { FC, useContext, useEffect, useState } from 'react';
-import { TUser, TUserJson } from 'types/rest/responses/auth';
+import { TUser } from 'types/rest/responses/auth';
 import { TServerResponse } from 'types/rest/responses/serverResponse';
 import { TFuncResponse } from 'types/rest';
-import { TUserEdit } from 'types/rest/requests/user';
+import { TUserEdit, TUserJson } from 'types/rest/requests/user';
 
 import { ContextError } from 'exceptions/ContextError';
 
@@ -12,7 +12,7 @@ import { AuthContext } from 'context/Auth.context';
 import cn from 'classnames';
 
 import { getApi } from 'utils/getApi';
-import { validateSchema } from 'utils/validateSchema';
+import { fetchUsers } from 'utils/fetchUsers';
 
 import { TUserConstructorFormFilled, UserConstructorForm } from 'components/templates/userConstructorForm';
 
@@ -29,38 +29,6 @@ export const ProfilePage: FC = () => {
     const [editState, setEditState] = useState<boolean>(false);
 
     /// ----- Handlers ----- ///
-    const getUserInfo = async (userId: number): Promise<TFuncResponse<TUser>> => {
-        const getUserQuery = getApi('getUser') + '?userIdentifiers[]=' + userId;
-
-        try {
-            const response = await fetch(getUserQuery);
-            const json = (await response.json()) as TServerResponse<TUser[]>;
-
-            const message = json?.message || response.statusText;
-            const { payload } = json || {};
-            const [user] = payload || [];
-
-            if (!response.ok) return { message, type: 'error' };
-
-            const validationResult = validateSchema(user, 'http://example.com/schema/user');
-            if (validationResult) {
-                return {
-                    message: `Incorrect response from server: ${validationResult.message}`,
-                    type: 'error'
-                };
-            }
-
-            return {
-                message,
-                type: 'info',
-                payload: user as TUser
-            };
-        } catch (error: unknown) {
-            const { message } = error as Error;
-            return { message, type: 'error' };
-        }
-    };
-
     /// --- Edit User --- ///
     const uploadFile = async (file: File): Promise<TFuncResponse<string>> => {
         const fileFormData: any = new FormData();
@@ -161,12 +129,12 @@ export const ProfilePage: FC = () => {
                     actionType={'edit'}
                     initData={initData}
                 />
-                <div
+                <button
                     className={cn('btn', 'clickable', s.btnCancelEdit)}
                     onClick={() => setEditState(false)}
                 >
                     Cancel
-                </div>
+                </button>
             </>
         );
     };
@@ -214,7 +182,8 @@ export const ProfilePage: FC = () => {
         const { userId } = authContext;
         if (!userId) return setUserState(null);
 
-        const { type, message, payload: user } = await getUserInfo(userId);
+        const { type, message, payload } = await fetchUsers([userId]);
+        const [user] = payload || [];
         if (type === 'error' || !user) {
             modalContext.openMessageModal(message, type);
             return setUserState(null);

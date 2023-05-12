@@ -5,6 +5,7 @@ import { PAGE_URL } from 'assets/static/url';
 import { LAYOUT_COMMON, LINKS, NAV_LINKS } from 'assets/static/layout';
 
 import { ProfilePage } from 'components/pages/profile';
+import { ProjectConstructorForm } from 'components/templates/projectConstructorForm';
 
 import { Layout } from 'components/Layout';
 
@@ -16,7 +17,7 @@ export const RouterProvider = () =>
         <Route path={PAGE_URL.profile} element={<ProfilePage />} />
         <Route path={PAGE_URL.main} element={<>main</>} />
         <Route path={PAGE_URL.about} element={<>about</>} />
-        <Route path={PAGE_URL.projects} element={<>projects</>} />
+        <Route path={PAGE_URL.projects} element={<ProjectConstructorForm handleFormSubmit={async ()=>{}} actionType={'create'} />} />
         <Route path={PAGE_URL.tests} element={<>tests</>} />
         <Route path={PAGE_URL.news} element={<>news</>} />
         <Route path={PAGE_URL.metrics} element={<>metrics</>} />

@@ -5,7 +5,7 @@ import { TUserRegistration } from 'types/rest/requests/user';
 import { formToObj } from 'utils/formToObj';
 import s from './userConstructor.module.scss';
 
-export type TConstructorForm = Omit<TUserRegistration, 'passwordConfirm' | 'password'>;
+type TConstructorForm = Omit<TUserRegistration, 'passwordConfirm' | 'password'>;
 export type TUserConstructorFormFilled = Omit<TConstructorForm, 'imgUrl'> & { imgUrl: File };
 
 interface UserConstructorFormProps {
@@ -87,7 +87,7 @@ export const UserConstructorForm: FC<UserConstructorFormProps> = (props) => {
                     className={'btn clickable'}
                     onClick={async (event) => {
                         event.preventDefault();
-                        const formData = formToObj(formRef) as TUserConstructorFormFilled;
+                        const formData = formToObj<TUserConstructorFormFilled>(formRef);
                         await handleFormSubmit(formData);
                     }}
                 >

@@ -20,14 +20,13 @@ export const LogInForm: FC = () => {
     const handleFormSubmit = async (event: MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         if (!authContext) throw new ContextError('No Auth Context!');
-        if (!modalContext) throw new ContextError('No Modal Context!');
 
-        const loginData = formToObj(formRef) as TUserLogIn;
+        const loginData = formToObj<TUserLogIn>(formRef);
         const loginResponse = await authContext.login(loginData);
         const { type, message } = loginResponse;
 
-        modalContext.openMessageModal(message, type);
-        if (loginResponse.type === 'info') modalContext.closeModal('custom');
+        modalContext?.openMessageModal(message, type);
+        if (loginResponse.type === 'info') modalContext?.closeModal('custom');
     };
 
     return (

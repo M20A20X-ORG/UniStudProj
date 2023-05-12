@@ -2,6 +2,22 @@
 @use "./theme" as t;
 @use "./placeholders";
 
+input, textarea, select, option {
+  height: c.$input-h;
+  margin-bottom: c.$input-m;
+  padding-left: c.$input-text-p;
+  color: t.$txt-white;
+  font-size: c.$input-fz;
+  font-family: c.$default-ff;
+  background-color: t.$bg-grey-l0;
+  border-radius: t.$br-small;
+  caret-color: t.$bg-white;
+}
+
+input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 :global(.formWrapper) {
   @extend %fd-col;
 
@@ -25,27 +41,77 @@ form {
 fieldset {
   @extend %fd-col;
 
+  width: c.$fieldset-w;
   margin-bottom: c.$input-m;
 }
 
-input {
-  @extend %input;
-
-  color: t.$txt-white;
-  caret-color: t.$bg-white;
-}
-
 textarea {
-  @extend %input;
-
-  color: t.$txt-white;
   height: c.$textarea-h;
   min-height: c.$input-h;
-  padding-top: c.$input-text-l-p;
+  padding-top: c.$input-text-p;
+  padding-left: c.$input-text-p;
   resize: vertical;
+}
 
-  &::placeholder {
-    display: flex;
-    justify-content: space-around;
+:global(.selectWrapper) {
+  @extend %v-c;
+
+  position: relative;
+  height: max-content;
+  min-height: c.$input-h;
+  margin-bottom: c.$input-m;
+  padding: c.$select-p;
+  color: t.$txt-white;
+  font-size: c.$content-fz;
+  font-family: c.$default-ff;
+  background-color: t.$bg-grey-l0;
+  border-radius: t.$br-medium;
+  caret-color: t.$bg-white;
+
+  &::after {
+    position: absolute;
+    right: c.$select-p;
+    z-index: 2;
+    box-sizing: border-box;
+    width: c.$select-arrow-size;
+    height: c.$select-arrow-size;
+    background: url("../assets/images/arrow-down.svg");
+    background-color: t.$bg-grey-l1;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    background-size: 40%;
+    border-top: t.$btn-border-h;
+    border-bottom: t.$btn-border-h;
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+  }
+
+  &:hover::after {
+    transform: c.$clickable-transform-hover;
+  }
+
+  &:active::after {
+    transform: c.$clickable-transform-active;
+  }
+}
+
+select {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding-left: c.$input-text-p;
+  color: inherit;
+  font-size: inherit;
+  background-color: inherit;
+  border: none;
+  border-radius: inherit;
+  cursor: pointer;
+
+  &:focus {
+    outline: 1px solid t.$bg-white;
   }
 }

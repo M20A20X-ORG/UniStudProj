@@ -16,8 +16,6 @@
     margin-left: g.$btn-h;
     padding: 7px;
     background-color: g.$bg-grey-l1;
-    border-top: g.$btn-border-h;
-    border-bottom: g.$btn-border-h;
     border-radius: g.$br-small;
 
     &Lines {
@@ -30,6 +28,7 @@
 
       &::before {
         position: absolute;
+        left: 0;
         top: 50%;
         width: 100%;
         height: 1px;

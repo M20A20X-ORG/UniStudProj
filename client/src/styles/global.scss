@@ -75,6 +75,7 @@ section {
 .btn {
   @extend %v-c-h-c;
 
+  display: block;
   width: c.$btn-w;
   height: c.$btn-h;
   color: t.$txt-white;
@@ -86,6 +87,21 @@ section {
   &Large {
     width: c.$btn-large-w;
   }
+}
+
+:global(.btnClose) {
+  width: c.$input-h;
+  height: c.$btn-h;
+  color: t.$txt-white;
+  background: url("../assets/images/crux.svg");
+  background-color: t.$bg-grey-l0;
+  background-repeat: no-repeat;
+  background-position: 50%;
+  background-size: 40%;
+  border-top: t.$btn-border-h;
+  border-bottom: t.$btn-border-h;
+  border-radius: t.$br-medium;
+  pointer-events: fill;
 }
 
 span, button {

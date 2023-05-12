@@ -34,7 +34,7 @@ $key-value-m: 30px;
   @extend %fd-col;
 
   &Key {
-    margin-bottom: 0.5*$key-value-m;
+    margin-bottom: 0.5 * $key-value-m;
   }
 }
 
@@ -47,5 +47,4 @@ $key-value-m: 30px;
 
 .btnCancelEdit {
   margin: 0 auto;
-  font-size: g.$content-fz;
 }
