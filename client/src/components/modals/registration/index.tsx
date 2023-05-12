@@ -1,8 +1,6 @@
-import React, { FC, MouseEvent, useContext, useRef } from 'react';
-import { TModalMessage } from 'types/context/modal.context';
-import { TPayloadResponse } from 'types/schemas/serverResponse';
-import { TUser, TUserJson } from 'types/schemas/auth';
-import { TUserRegistration } from 'types/requests/login';
+import React, { FC, MutableRefObject, useContext } from 'react';
+import { TServerResponse } from 'types/rest/responses/serverResponse';
+import { TFuncResponse } from 'types/rest';
 
 import { ContextError } from 'exceptions/ContextError';
 
@@ -13,100 +11,48 @@ import { getApi } from 'utils/getApi';
 
 import { LogInForm } from 'components/modals/login';
 
+import { TUserConstructorFormFilled, UserConstructorForm } from 'components/templates/userConstructorForm';
 import s from './registration.module.scss';
 
 export const RegistrationForm: FC = () => {
     const modalContext = useContext(ModalContext);
 
-    const formRef = useRef<HTMLFormElement>(document.createElement('form'));
-
-    const requestRegistration = async (): Promise<TModalMessage> => {
-        if (!modalContext) throw new ContextError('No Modal Context!');
-
-        const registerApi = getApi('register');
-        const data: TUserJson<TUserRegistration> = { user: formToObj(formRef) };
+    const requestRegistration = async (formData: any): Promise<TFuncResponse> => {
+        const registrationApi = getApi('registerUser');
         const requestInit: RequestInit = {
             method: 'POST',
             headers: { 'Content-type': 'application/json;charset=utf-8' },
-            body: JSON.stringify(data)
+            body: JSON.stringify(formData)
         };
 
-        let message = null;
-
         try {
-            const response = await fetch(registerApi, requestInit);
-            const text = await response.text();
-            if (!text) return { message: 'Empty response from server', type: 'error' };
+            const response = await fetch(registrationApi, requestInit);
+            const json = (await response.json()) as TServerResponse;
+            const message = json?.message || response.statusText;
 
-            const json = JSON.parse(text) as TPayloadResponse<TUser>;
-            message = json.message;
             if (!response.ok) return { message, type: 'error' };
+            return { message, type: 'info' };
         } catch (error: unknown) {
-            if (error instanceof Error) return { message: error.message, type: 'error' };
+            const { message } = error as Error;
+            return { message, type: 'error' };
         }
-
-        return { message: message as string, type: 'info' };
     };
 
-    const handleFormSubmit = async (event: MouseEvent<HTMLButtonElement>) => {
-        event.preventDefault();
+    const handleFormSubmit = async (formData: TUserConstructorFormFilled) => {
         if (!modalContext) throw new ContextError('No Modal Context!');
-
-        const loginResponse: TModalMessage = await requestRegistration();
-        modalContext?.openMessageModal(loginResponse);
+        const data = { user: formData };
+        const { message, type } = await requestRegistration(data);
+        modalContext?.openMessageModal(message, type);
     };
 
     return (
         <div className={'modal'}>
             <div className={'formWrapper'}>
                 <h2>Registration</h2>
-                <form ref={formRef} className={s.registrationForm}>
-                    <fieldset className={'fieldset'}>
-                        <input
-                            type={'text'}
-                            name={'name'}
-                            placeholder={'Name:'}
-                        />
-                        <input
-                            type={'text'}
-                            name={'email'}
-                            placeholder={'Email:'}
-                        />
-                        <input
-                            type={'text'}
-                            name={'username'}
-                            placeholder={'Username:'}
-                        />
-                        <input
-                            type={'text'}
-                            name={'group'}
-                            placeholder={'Group:'}
-                        />
-                        <textarea
-                            name={'about'}
-                            placeholder={'About:'}
-                        />
-                        <div className={s.passwords}>
-                            <input
-                                type={'password'}
-                                name={'password'}
-                                placeholder={'Password:'}
-                            />
-                            <input
-                                type={'password'}
-                                name={'passwordConfirm'}
-                                placeholder={'Password Confirm:'}
-                            />
-                        </div>
-                    </fieldset>
-                    <button
-                        type={'submit'}
-                        className={'btn clickable'}
-                        onClick={(event) => handleFormSubmit(event)}
-                    >
-                        Register
-                    </button>
-                </form>
+                <UserConstructorForm
+                    handleFormSubmit={handleFormSubmit}
+                    actionType={'register'}
+                />
                 <div className={s.login}>
                     <span
                         className={'clickable'}

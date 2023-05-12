@@ -7,6 +7,7 @@ export type TUser = {
     userId: number;
     role: string;
     username: string;
+    imgUrl: string;
     name: string;
     email: string;
     about?: string;

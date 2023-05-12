@@ -1,12 +1,11 @@
-import { TUser } from 'types/schemas/auth';
-import { TModalMessage } from 'types/context/modal.context';
-import { TUserLogIn } from 'types/requests/login';
+import { TFuncResponse } from 'types/rest';
+import { TUserLogIn } from 'types/rest/requests/user';
 
-export type TAuthLogin = (login: TUserLogIn) => Promise<TModalMessage>;
+export type TAuthLogin = (login: TUserLogIn) => Promise<TFuncResponse>;
 export type TAuthLogout = () => void;
 
 export type TAuthState = {
-    user: TUser | null;
+    userId: number | null;
     isLoggedIn: boolean;
 };
 

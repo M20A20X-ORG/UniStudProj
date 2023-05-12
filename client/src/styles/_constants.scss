@@ -9,6 +9,7 @@ $max-screen-w: 1920px;
 
 /* Common */
 $content-fz: 0.875em;
+$content-fz-small: 0.75em;
 $content-p: mn(70px);
 $content-par-indent: 48px;
 $default-ff: "DM Sans", sans-serif;
@@ -24,6 +25,9 @@ $nav-vl-height: 23px;
 $nav-hl-width: 100px;
 $main-menu-w: 200px;
 $error-msg-max-w: 300px;
+$section-p: 50px;
+$section-m: 30px;
+$section-m-small: 10px;
 
 /* Elements */
 $clickable-transform-hover: translateY(mn(1.5px));

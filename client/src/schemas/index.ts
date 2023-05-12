@@ -1,11 +1,7 @@
-import { TSchema, TSchemaFormatGeneral } from 'types/schemas/schema';
+import { TSchema } from 'types/rest/responses/schema';
 
-import { USER_FORMAT, userSchema } from './user';
+import { userSchema } from './user';
 
 export const SCHEMAS: TSchema = {
     userSchema
-};
-
-export const SCHEMA_FORMATS: TSchemaFormatGeneral = {
-    USER_FORMAT
 };

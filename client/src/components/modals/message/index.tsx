@@ -23,6 +23,7 @@ export const MessageModal: FC<MessageModalProps> = (props) => {
     const [isMouseOver, setMouseOver] = useState<boolean>(false);
 
     /// ----- componentDidMount ----- ///
+    /// ----- componentWillMount ----- ///
     useEffect(() => {
         if (timeLeft < 0) {
             modalContext?.closeModal('message');
@@ -32,7 +33,7 @@ export const MessageModal: FC<MessageModalProps> = (props) => {
             if (!isMouseOver) setTimeLeft(timeLeft - 100);
         }, 50);
         return () => clearInterval(interval);
-    }, [timeLeft, isMouseOver, modalContext?.modalElem.message]);
+    }, [timeLeft, isMouseOver]);
 
     return (
         <div

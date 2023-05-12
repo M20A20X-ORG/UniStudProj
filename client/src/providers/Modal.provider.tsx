@@ -1,5 +1,5 @@
 import React, { FC, JSX, ReactNode, ReactPortal, useEffect, useState } from 'react';
-import { TModal, TModalMessage } from 'types/context/modal.context';
+import { TMessage, TModal } from 'types/context/modal.context';
 
 import { createPortal } from 'react-dom';
 
@@ -27,7 +27,7 @@ export const ModalProvider: FC<ModalProviderProps> = (props) => {
         setModalElem((prevState) => ({ ...prevState, [type]: portal }));
     };
 
-    const openMessageModal = ({ message, type }: TModalMessage, initTime = DEFAULT_MSG_TIME): void => {
+    const openMessageModal = (message: string, type: TMessage, initTime = DEFAULT_MSG_TIME): void => {
         openModal(
             <MessageModal
                 initTime={initTime}

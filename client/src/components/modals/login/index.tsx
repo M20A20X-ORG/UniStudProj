@@ -1,7 +1,6 @@
 import React, { FC, MouseEvent, useContext, useRef } from 'react';
-import { TUserLogIn } from 'types/requests/login';
 import { ContextError } from 'exceptions/ContextError';
-import { TModalMessage } from 'types/context/modal.context';
+import { TUserLogIn } from 'types/rest/requests/user';
 
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
@@ -23,10 +22,11 @@ export const LogInForm: FC = () => {
         if (!authContext) throw new ContextError('No Auth Context!');
         if (!modalContext) throw new ContextError('No Modal Context!');
 
-        const login = formToObj<TUserLogIn>(formRef);
-        const loginResponse: TModalMessage = await authContext.login(login);
+        const loginData = formToObj(formRef) as TUserLogIn;
+        const loginResponse = await authContext.login(loginData);
+        const { type, message } = loginResponse;
 
-        modalContext.openMessageModal(loginResponse);
+        modalContext.openMessageModal(message, type);
         if (loginResponse.type === 'info') modalContext.closeModal('custom');
     };
 

@@ -40,6 +40,7 @@ textarea {
 
   color: t.$txt-white;
   height: c.$textarea-h;
+  min-height: c.$input-h;
   padding-top: c.$input-text-l-p;
   resize: vertical;
 

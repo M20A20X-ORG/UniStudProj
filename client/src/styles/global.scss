@@ -46,9 +46,9 @@ article {
 
 section {
   margin-bottom: c.$main-elems-m-b;
-  padding: t.$br-medium;
+  padding: c.$section-p;
   overflow: hidden;
-  background-color: t.$bg-grey-l0;
+  background-color: t.$bg-grey-l1;
   border-radius: t.$br-medium;
 
   &:last-of-type {
@@ -95,6 +95,11 @@ span, button {
 }
 
 /* Headers / p */
+h1,
+h2,
+h3 {
+  text-transform: capitalize;
+}
 
 h1 {
   margin-bottom: c.$h1-m-b;

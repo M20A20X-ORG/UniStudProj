@@ -1,27 +1,5 @@
 @use "styles/global.scss" as g;
 
-
-.registrationForm {
-  margin-bottom: g.$input-m;
-
-  fieldset {
-    width: 350px;
-  }
-}
-
-.passwords {
-  display: flex;
-
-  input {
-    display: flex;
-    flex-grow: 1;
-  }
-
-  input:first-of-type {
-    margin-right: g.$input-m;
-  }
-}
-
 .login {
-  font-size: 0.7em;
+  font-size: g.$content-fz-small;
 }
