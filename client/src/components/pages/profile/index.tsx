@@ -10,9 +10,9 @@ import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
 import cn from 'classnames';
-
 import { getApi } from 'utils/getApi';
 import { fetchUsers } from 'utils/fetchUsers';
+import { getSavedToken } from 'utils/getSavedToken';
 
 import { TUserConstructorFormFilled, UserConstructorForm } from 'components/templates/userConstructorForm';
 
@@ -39,7 +39,7 @@ export const ProfilePage: FC = () => {
         const requestInit: RequestInit = {
             method: 'POST',
             headers: {
-                authorization: 'Bearer ' + localStorage.getItem('access-token')
+                authorization: getSavedToken('access-token')
             },
             body: fileFormData
         };
@@ -68,7 +68,7 @@ export const ProfilePage: FC = () => {
             method: 'PUT',
             headers: {
                 'Content-type': 'application/json;charset=utf-8',
-                authorization: 'Bearer ' + localStorage.getItem('access-token')
+                authorization: getSavedToken('access-token')
             },
             body: JSON.stringify(formData)
         };
@@ -87,21 +87,20 @@ export const ProfilePage: FC = () => {
     };
 
     const handleUserEditSubmit = async (formData: TUserConstructorFormFilled): Promise<void> => {
-        if (!modalContext) throw new ContextError('No Modal Context!');
         if (!authContext) throw new ContextError('No Auth Context!');
 
         const { userId } = authContext;
-        if (!userId) return modalContext.openMessageModal("Can't edit unauthorized user!", 'error');
+        if (!userId) return modalContext?.openMessageModal("Can't edit unauthorized user!", 'error');
 
         const fileUploadResponse = await uploadFile(formData.imgUrl);
         if (fileUploadResponse.type === 'error')
-            return modalContext.openMessageModal(fileUploadResponse.message, fileUploadResponse.type);
+            return modalContext?.openMessageModal(fileUploadResponse.message, fileUploadResponse.type);
 
         const editFormData = { ...formData, imgUrl: fileUploadResponse.payload };
         const data: TUserJson<TUserEdit> = { user: { userId, ...editFormData } };
 
         const { message, type } = await updateUserInfo(data);
-        modalContext.openMessageModal(message, type);
+        modalContext?.openMessageModal(message, type);
 
         if (type === 'info') setEditState(false);
     };
@@ -139,7 +138,7 @@ export const ProfilePage: FC = () => {
         );
     };
 
-    const renderUserState = () => {
+    const renderProfile = () => {
         const { email, group, name, imgUrl, username, about } = userState || {};
 
         const infoElem = (
@@ -174,9 +173,7 @@ export const ProfilePage: FC = () => {
         return <>{editState ? renderFormEdit() : infoElem}</>;
     };
 
-    /// ----- ComponentDidUpdate ------ ///
-    const handleComponentDidUpdate = async () => {
-        if (!modalContext) throw new ContextError('No Modal Context!');
+    const updateUserState = async () => {
         if (!authContext) throw new ContextError('No Auth Context!');
 
         const { userId } = authContext;
@@ -185,16 +182,17 @@ export const ProfilePage: FC = () => {
         const { type, message, payload } = await fetchUsers([userId]);
         const [user] = payload || [];
         if (type === 'error' || !user) {
-            modalContext.openMessageModal(message, type);
+            modalContext?.openMessageModal(message, type);
             return setUserState(null);
         }
 
         setUserState(user);
     };
 
+    /// ----- ComponentDidUpdate ------ ///
     useEffect(() => {
-        handleComponentDidUpdate();
+        updateUserState();
     }, [authContext?.isLoggedIn]);
 
-    return <section>{renderUserState()}</section>;
+    return <section>{renderProfile()}</section>;
 };

@@ -1,0 +1,60 @@
+@use "styles/global.scss" as g;
+
+$profile-img-size: 150px;
+$key-value-m: 30px;
+
+.info {
+  display: flex;
+  justify-content: space-between;
+
+  &Common {
+    display: grid;
+    grid-gap: $key-value-m;
+    grid-template-rows: auto;
+    grid-template-columns: auto 1fr;
+    width: auto;
+    margin-right: 60px;
+  }
+
+  &Key {
+    text-align: right;
+  }
+
+  &Participants {
+    display: grid;
+    grid-gap: $key-value-m;
+    grid-template-rows: auto;
+    grid-template-columns: auto 1fr;
+  }
+}
+
+.tag {
+  flex-direction: row;
+  grid-template-columns: auto auto;
+  width: auto;
+  padding: 5px 10px;
+  border-radius: g.$br-medium;
+  background-color: g.$bg-black;
+}
+
+.description {
+  @extend %fd-col;
+
+  margin-top: $key-value-m;
+
+  .infoKey {
+    margin-bottom: 0.5 * $key-value-m;
+    text-align: left;
+  }
+}
+
+.edit {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: g.$section-m-small;
+  font-size: g.$content-fz-small;
+}
+
+.btnCancelEdit {
+  margin: 0 auto;
+}

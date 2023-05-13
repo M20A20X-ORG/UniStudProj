@@ -1,12 +1,8 @@
-import React, { FC, MutableRefObject, useContext } from 'react';
+import React, { FC, useContext } from 'react';
 import { TServerResponse } from 'types/rest/responses/serverResponse';
 import { TFuncResponse } from 'types/rest';
 
-import { ContextError } from 'exceptions/ContextError';
-
 import { ModalContext } from 'context/Modal.context';
-
-import { formToObj } from 'utils/formToObj';
 import { getApi } from 'utils/getApi';
 
 import { LogInForm } from 'components/modals/login';
@@ -39,7 +35,6 @@ export const RegistrationForm: FC = () => {
     };
 
     const handleFormSubmit = async (formData: TUserConstructorFormFilled) => {
-        if (!modalContext) throw new ContextError('No Modal Context!');
         const data = { user: formData };
         const { message, type } = await requestRegistration(data);
         modalContext?.openMessageModal(message, type);

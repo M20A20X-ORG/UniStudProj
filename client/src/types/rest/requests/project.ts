@@ -4,7 +4,6 @@ import { TProjectParticipant } from 'types/rest/responses/project';
 export type TProjectJson<T> = { project: T };
 
 export type TProjectParticipantId = Pick<TProjectParticipant, 'userId' | 'projectRoleId'>;
-
 export type TProjectCreation = Pick<TProject, 'name' | 'description' | 'dateStart' | 'dateEnd'> & {
     newTagIds: Array<number>;
     newParticipantIds: Array<TProjectParticipantId>;
