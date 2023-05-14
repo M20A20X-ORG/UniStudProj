@@ -42,19 +42,21 @@ export const RegistrationForm: FC = () => {
 
     return (
         <div className={'modal'}>
-            <div className={'formWrapper'}>
-                <h2>Registration</h2>
-                <UserConstructorForm
-                    handleFormSubmit={handleFormSubmit}
-                    actionType={'register'}
-                />
-                <div className={s.login}>
-                    <span
-                        className={'clickable'}
-                        onClick={() => modalContext?.openModal(<LogInForm />, 'custom')}
-                    >
-                        Already registered? Log In!
-                    </span>
+            <div className={'modalContainer'}>
+                <div className={'formWrapper'}>
+                    <h2>Registration</h2>
+                    <UserConstructorForm
+                        handleFormSubmit={handleFormSubmit}
+                        actionType={'register'}
+                    />
+                    <div className={s.login}>
+                        <span
+                            className={'clickable'}
+                            onClick={() => modalContext?.openModal(<LogInForm />, 'custom')}
+                        >
+                            Already registered? Log In!
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -31,39 +31,41 @@ export const LogInForm: FC = () => {
 
     return (
         <div className={'modal'}>
-            <div className={'formWrapper'}>
-                <h2>Log In</h2>
-                <form
-                    ref={formRef}
-                    className={s.loginForm}
-                >
-                    <fieldset className={'fieldset'}>
-                        <input
-                            type={'text'}
-                            name={'username'}
-                            placeholder={'Username:'}
-                        />
-                        <input
-                            type={'password'}
-                            name={'password'}
-                            placeholder={'Password:'}
-                        />
-                    </fieldset>
-                    <button
-                        type={'submit'}
-                        className={'btn clickable'}
-                        onClick={(event) => handleFormSubmit(event)}
+            <div className={'modalContainer'}>
+                <div className={'formWrapper'}>
+                    <h2>Log In</h2>
+                    <form
+                        ref={formRef}
+                        className={s.loginForm}
                     >
-                        Log In
-                    </button>
-                </form>
-                <div className={s.register}>
-                    <span
-                        className={'clickable'}
-                        onClick={() => modalContext?.openModal(<RegistrationForm />, 'custom')}
-                    >
-                        Don&apos;t have account? Register now!
-                    </span>
+                        <fieldset className={'fieldset'}>
+                            <input
+                                type={'text'}
+                                name={'username'}
+                                placeholder={'Username:'}
+                            />
+                            <input
+                                type={'password'}
+                                name={'password'}
+                                placeholder={'Password:'}
+                            />
+                        </fieldset>
+                        <button
+                            type={'submit'}
+                            className={'btn clickable'}
+                            onClick={(event) => handleFormSubmit(event)}
+                        >
+                            Log In
+                        </button>
+                    </form>
+                    <div className={s.register}>
+                        <span
+                            className={'clickable'}
+                            onClick={() => modalContext?.openModal(<RegistrationForm />, 'custom')}
+                        >
+                            Don&apos;t have account? Register now!
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

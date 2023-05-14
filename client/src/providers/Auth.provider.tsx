@@ -16,12 +16,12 @@ interface AuthProviderProps {
 
 export const AuthProvider: FC<AuthProviderProps> = (props) => {
     const { children } = props;
-    const [authState, setAuthState] = useState<TAuthState>({ userId: null, userRole: null, isLoggedIn: false });
+    const [authState, setAuthState] = useState<TAuthState>({ userId: null, role: null, isLoggedIn: false });
 
     const modalContext = useContext(ModalContext);
 
     /// ----- Handlers ----- ///
-    const logout = (): void => setAuthState({ userId: null, userRole: null, isLoggedIn: false });
+    const logout = (): void => setAuthState({ userId: null, role: null, isLoggedIn: false });
 
     const login = async (login: TUserLogIn): Promise<TFuncResponse> => {
         if (authState.isLoggedIn) {
@@ -39,16 +39,18 @@ export const AuthProvider: FC<AuthProviderProps> = (props) => {
 
         try {
             const response = await fetch(loginApi, requestInit);
+            if (response.status === 500) return { message: response.statusText, type: 'error' };
             const json = (await response.json()) as TServerResponse<TUser> & TAuth;
 
             const message = json?.message || response.statusText;
-            const { payload, refreshToken, accessToken } = json || {};
-            const { userId, role: userRole } = payload || {};
-
             if (!response.ok) return { message, type: 'error' };
+
+            const { payload, refreshToken, accessToken } = json || {};
+            const { userId, role } = payload || {};
+
             if (
                 typeof userId !== 'number' ||
-                typeof userRole !== 'string' ||
+                typeof role !== 'string' ||
                 typeof accessToken !== 'string' ||
                 typeof refreshToken !== 'string'
             )
@@ -57,7 +59,7 @@ export const AuthProvider: FC<AuthProviderProps> = (props) => {
             localStorage.setItem('access-token', accessToken);
             localStorage.setItem('refresh-token', refreshToken);
 
-            setAuthState({ userId, userRole, isLoggedIn: true });
+            setAuthState({ userId, role, isLoggedIn: true });
             return { message, type: 'info' };
         } catch (error: unknown) {
             const { message } = error as Error;

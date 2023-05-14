@@ -1,17 +1,17 @@
 import React, { ChangeEvent, FC, JSX, MouseEvent, useContext, useRef, useState } from 'react';
-import { TFuncResponse } from 'types/rest';
-import { TServerResponse } from 'types/rest/responses/serverResponse';
 import { TUser } from 'types/rest/responses/auth';
-import { EProjectRole, TProject, TProjectParticipant } from 'types/rest/responses/project';
+import { EProjectAccessRole, TProject, TProjectParticipant } from 'types/rest/responses/project';
 import { TTag } from 'types/rest/responses/tag';
 
+import { OPTIONS_LIMIT } from 'assets/static/common';
+
 import { ModalContext } from 'context/Modal.context';
+import { AuthContext } from 'context/Auth.context';
 
 import cn from 'classnames';
 import { formToObj } from 'utils/formToObj';
-import { fetchUsers } from 'utils/fetchUsers';
-import { getApi } from 'utils/getApi';
-import { validateSchema } from 'utils/validateSchema';
+import { fetchUrl } from 'utils/fetchUrl';
+
 import s from './projectConstructor.module.scss';
 
 type TParticipantOption = Pick<TUser, 'userId' | 'username'>;
@@ -19,7 +19,6 @@ type TFormInitialData = Omit<TProject, 'projectId' | 'participantsAmount' | 'tag
 export type TProjectFormData = Required<TFormInitialData>;
 export type TProjectFormCommonData = Omit<TProjectFormData, 'tags' | 'participants'>;
 
-const OPTIONS_LIMIT = 10;
 const TAGS_SELECT_NAME = 'tags';
 const PARTICIPANTS_SELECT_NAME = 'participants';
 
@@ -35,6 +34,7 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
 
     /// ----- Context / Ref ----- ///
     const modalContext = useContext(ModalContext);
+    const authContext = useContext(AuthContext);
     const formRef = useRef<HTMLFormElement>(document.createElement('form'));
 
     /// ----- State ----- ///
@@ -42,48 +42,6 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
     const [selectedTagsState, setSelectedTagsState] = useState<TTag[]>(initData?.tags || []);
     const [usersState, setUsersState] = useState<TParticipantOption[]>([]);
     const [selectedUsersState, setSelectedUsersState] = useState<TProjectParticipant[]>(initData?.participants || []);
-
-    /// ----- Fetch ----- ///
-    const fetchProjectTags = async (limit: number): Promise<TFuncResponse<TTag[]>> => {
-        const query = getApi('getProjectTags') + '?limit=' + limit;
-
-        try {
-            const response = await fetch(query);
-            const json = (await response.json()) as TServerResponse<TTag[]>;
-
-            const message = json?.message || response.statusText;
-            const { payload: tagsData } = json || {};
-
-            if (!response.ok) return { message, type: 'error' };
-
-            let validationErrorMessage: string | undefined;
-            const isPayloadValid =
-                Array.isArray(tagsData) &&
-                tagsData.every((elem) => {
-                    const validationResult = validateSchema(elem, 'http://example.com/schema/tag');
-                    if (validationResult) {
-                        validationErrorMessage = validationResult?.message;
-                        return false;
-                    }
-                });
-
-            if (isPayloadValid) {
-                return {
-                    message: `Incorrect response from server: ${validationErrorMessage}`,
-                    type: 'error'
-                };
-            }
-
-            return {
-                message,
-                type: 'info',
-                payload: tagsData as TTag[]
-            };
-        } catch (error: unknown) {
-            const { message } = error as Error;
-            return { message, type: 'error' };
-        }
-    };
 
     /// ----- Handlers ----- ///
     const handleFormPreSubmit = async (event: MouseEvent<HTMLButtonElement>): Promise<void> => {
@@ -119,7 +77,11 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
 
     const handleTagsSelectClick = async (event: MouseEvent<HTMLSelectElement>): Promise<void> => {
         event.currentTarget.value = '';
-        const { message, type, payload: tags } = await fetchProjectTags(OPTIONS_LIMIT);
+        const {
+            message,
+            type,
+            payload: tags
+        } = await fetchUrl<TTag>('getProjectTags', 'projectIds', [], 'tag', OPTIONS_LIMIT);
         if (type === 'error' || !tags) return modalContext?.openMessageModal(message, type);
         setTagsState(tags);
     };
@@ -135,7 +97,7 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
 
             const selectedUser: TProjectParticipant = {
                 ...selected,
-                projectRoleId: EProjectRole.PROJECT_ROLE_DEVELOPER,
+                projectRoleId: EProjectAccessRole.PROJECT_ROLE_DEVELOPER,
                 projectRole: 'Developer'
             };
             return [...prev, selectedUser];
@@ -144,9 +106,15 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
 
     const handleUserSelectClick = async (event: MouseEvent<HTMLSelectElement>): Promise<void> => {
         event.currentTarget.value = '';
-        const { message, type, payload: usersRaw } = await fetchUsers([], OPTIONS_LIMIT);
+        const {
+            message,
+            type,
+            payload: usersRaw
+        } = await fetchUrl<TUser>('getUsers', 'userIdentifiers', [], 'user', OPTIONS_LIMIT);
         if (type === 'error' || !usersRaw) return modalContext?.openMessageModal(message, type);
-        const users = usersRaw.map(({ userId, username }) => ({ userId, username }));
+        const users = usersRaw
+            .map(({ userId, username }) => ({ userId, username }))
+            .filter((u) => u.userId !== authContext?.userId);
         setUsersState(users);
     };
 
@@ -158,7 +126,7 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
             const newStateUser: TProjectParticipant = {
                 ...prev[changedUserIndex],
                 projectRoleId: selectedRoleId,
-                projectRole: EProjectRole[selectedRoleId]
+                projectRole: EProjectAccessRole[selectedRoleId]
             };
             const newState: TProjectParticipant[] = [
                 ...prev.slice(0, changedUserIndex),
@@ -227,9 +195,9 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
                         defaultValue={su.projectRoleId}
                         onChange={(event) => handleRoleSelectChange(event, su.userId)}
                     >
-                        <option value={EProjectRole.PROJECT_ROLE_MANAGER}>Manager</option>
-                        <option value={EProjectRole.PROJECT_ROLE_MENTOR}>Mentor</option>
-                        <option value={EProjectRole.PROJECT_ROLE_DEVELOPER}>Developer</option>
+                        <option value={EProjectAccessRole.PROJECT_ROLE_MANAGER}>Manager</option>
+                        <option value={EProjectAccessRole.PROJECT_ROLE_MENTOR}>Mentor</option>
+                        <option value={EProjectAccessRole.PROJECT_ROLE_DEVELOPER}>Developer</option>
                     </select>
                 </span>
             </li>

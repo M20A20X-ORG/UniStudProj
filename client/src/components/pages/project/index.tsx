@@ -1,18 +1,29 @@
 import React, { FC, JSX, useContext, useEffect, useState } from 'react';
-import { TFuncResponse } from 'types/rest';
-import { TServerResponse } from 'types/rest/responses/serverResponse';
-import { EProjectRole, TProject } from 'types/rest/responses/project';
+import { EProjectAccessRole, PROJECT_ACCESS_ROLE, TProject } from 'types/rest/responses/project';
 
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
+import cn from 'classnames';
 import { useParams } from 'react-router-dom';
-import { getApi } from 'utils/getApi';
-import { validateSchema } from 'utils/validateSchema';
+
+import { fetchUrl } from 'utils/fetchUrl';
 
 import { ProjectEditForm } from 'components/modals/projectEdit';
 
 import s from './project.module.scss';
+
+const PROJECT_FALLBACK: Partial<TProject> = {
+    projectId: undefined,
+    tags: undefined,
+    participants: undefined,
+    description: undefined,
+    dateEnd: undefined,
+    dateStart: undefined,
+    name: undefined,
+    tagsAmount: undefined,
+    participantsAmount: undefined
+};
 
 export const ProjectPage: FC = () => {
     /// ----- Params ----- ///
@@ -27,42 +38,8 @@ export const ProjectPage: FC = () => {
     const [projectState, setProjectState] = useState<TProject | null>(null);
     const [editSubmitToggle, toggleEditSubmit] = useState<boolean>(false);
 
-    /// ----- REST ----- ///
-    const fetchProject = async (projectId: number): Promise<TFuncResponse<TProject>> => {
-        const query = getApi('getProject') + '?projectIds[]=' + projectId;
-
-        try {
-            const response = await fetch(query);
-            if (response.status === 500) return { message: response.statusText, type: 'error' };
-            const json = (await response.json()) as TServerResponse<TProject[]>;
-
-            const message = json?.message || response.statusText;
-            if (!response.ok) return { message, type: 'error' };
-
-            const { payload } = json || {};
-            const [projectData] = payload || [];
-
-            const validationResult = validateSchema(projectData, 'http://example.com/schema/project');
-            if (validationResult) {
-                return {
-                    message: `Incorrect response from server: ${JSON.stringify(validationResult)}`,
-                    type: 'error'
-                };
-            }
-
-            return {
-                message,
-                type: 'info',
-                payload: projectData as TProject
-            };
-        } catch (error: unknown) {
-            const { message } = error as Error;
-            return { message, type: 'error' };
-        }
-    };
-
     /// ----- Render ----- ///
-    const renderBtnElem = () => {
+    const renderBtnEditElem = () => {
         const btnElem = (
             <div
                 className={s.edit}
@@ -85,59 +62,90 @@ export const ProjectPage: FC = () => {
         const isProjectOwner =
             projectState?.participants &&
             projectState.participants.find(
-                (p) => p.userId === authContext?.userId && p.projectRoleId === EProjectRole.PROJECT_ROLE_OWNER
+                (p) => p.userId === authContext?.userId && p.projectRoleId === EProjectAccessRole.PROJECT_ROLE_OWNER
             );
 
         return <>{authContext?.isLoggedIn && isProjectOwner ? btnElem : null}</>;
     };
 
-    const renderTags = (): JSX.Element => {
-        let tagElems: JSX.Element[] | undefined = undefined;
-        if (projectState?.tags)
-            tagElems = projectState?.tags.map((t) => (
-                <span
-                    key={JSON.stringify(t)}
-                    className={s.tag}
-                >
-                    {t.tag}
-                </span>
-            ));
-        return <span>{tagElems ?? '--'}</span>;
-    };
-
     const renderParticipants = (): JSX.Element => {
-        let participants: { [p: string]: JSX.Element } | undefined = undefined;
-
-        if (projectState?.participants) {
-            const participantEntries: [EProjectRole, JSX.Element][] = projectState.participants.map((p) => [
+        const participantEntries: [EProjectAccessRole, JSX.Element][] | undefined = projectState?.participants.map(
+            (p) => [
                 p.projectRoleId,
-                <span
+                <li
                     key={JSON.stringify(p)}
-                    className={s.tag}
+                    className={'tag'}
                 >
                     {p.username}
-                </span>
-            ]);
-            participants = Object.fromEntries(participantEntries);
-        }
+                </li>
+            ]
+        );
+        const participants = Object.fromEntries(participantEntries || []);
+        const participantsELem = Object.keys(PROJECT_ACCESS_ROLE).map((keyRaw) => {
+            const key = keyRaw as unknown as keyof typeof PROJECT_ACCESS_ROLE;
+            return (
+                <>
+                    <span className={'cardKey'}>{PROJECT_ACCESS_ROLE[key]}:</span>
+                    <ul className={'tagList'}>{participants[key] ?? '--'}</ul>
+                </>
+            );
+        });
+
+        return <>{participantsELem}</>;
+    };
+
+    const renderProjectCommon = (project: TProject | null) => {
+        const { projectId, tags, participants, description, ...projectCommon } = project || PROJECT_FALLBACK;
+        const commonLiElems: JSX.Element[] = Object.keys(projectCommon).map((key) => {
+            const value = projectCommon[key as keyof typeof projectCommon];
+            return (
+                <>
+                    <span className={'cardKey'}>{key}:</span>
+                    <span>{value ?? '--'}</span>
+                </>
+            );
+        });
+        const tagsLiElems: JSX.Element[] | undefined = tags?.map((t) => (
+            <li
+                key={JSON.stringify(t)}
+                className={'tag'}
+            >
+                {t.tag}
+            </li>
+        ));
+        const tagsLiElem = (
+            <>
+                <span className={'cardKey'}>Tags:</span>
+                <ul className={'tagList'}>{tagsLiElems ?? '--'}</ul>
+            </>
+        );
 
         return (
             <>
-                <span className={s.infoKey}>Owner:</span>
-                <span>{participants?.[EProjectRole.PROJECT_ROLE_OWNER] ?? '--'}</span>
-                <span className={s.infoKey}>Managers:</span>
-                <span>{participants?.[EProjectRole.PROJECT_ROLE_MANAGER] ?? '--'}</span>
-                <span className={s.infoKey}>Mentors:</span>
-                <span>{participants?.[EProjectRole.PROJECT_ROLE_MENTOR] ?? '--'}</span>
-                <span className={s.infoKey}>Developers:</span>
-                <span>{participants?.[EProjectRole.PROJECT_ROLE_DEVELOPER] ?? '--'}</span>
+                <div className={'cardHead'}>
+                    <span>Project ID: {projectId ?? '--'}</span>
+                </div>
+                <div className={s.projectCardCommon}>
+                    <ul className={'cardCommon'}>
+                        {commonLiElems}
+                        {tagsLiElem}
+                    </ul>
+                    <ul className={cn('cardCommon', s.projectCardParticipants)}>
+                        <>{renderParticipants()}</>
+                    </ul>
+                </div>
+                <div className={s.description}>
+                    <span className={s.descriptionCardKey}>Description:</span>
+                    <span className={s.descriptionCardValue}>{description || '--'}</span>
+                </div>
             </>
         );
     };
 
     const updateProjectState = async () => {
         if (isNaN(projectId)) return;
-        const { message, type, payload: projectData } = await fetchProject(projectId);
+        const { message, type, payload } = await fetchUrl<TProject>('getProject', 'projectIds', [projectId], 'project');
+        const [projectData] = payload || [];
         if (type === 'error' || !projectData) return modalContext?.openMessageModal(message, type);
         setProjectState(projectData);
     };
@@ -150,28 +158,8 @@ export const ProjectPage: FC = () => {
     return (
         <>
             <section className={''}>
-                <div className={s.info}>
-                    <ul className={s.infoCommon}>
-                        <span className={s.infoKey}>Name:</span>
-                        <span>{projectState?.name ?? '--'}</span>
-                        <span className={s.infoKey}>Participants:</span>
-                        <span>{projectState?.participantsAmount ?? '--'}</span>
-                        <span className={s.infoKey}>Date start:</span>
-                        <span>{projectState?.dateStart ?? '--'}</span>
-                        <span className={s.infoKey}>Date end:</span>
-                        <span>{projectState?.dateEnd ?? '--'}</span>
-                        <span className={s.infoKey}>Tags:</span>
-                        <>{renderTags()}</>
-                    </ul>
-                    <ul className={s.infoParticipants}>
-                        <>{renderParticipants()}</>
-                    </ul>
-                </div>
-                <div className={s.description}>
-                    <span className={s.infoKey}>Description:</span>
-                    <span>{projectState?.description || '--'}</span>
-                </div>
-                {renderBtnElem()}
+                <div className={cn('card', s.projectCard)}>{renderProjectCommon(projectState)}</div>
+                {renderBtnEditElem()}
             </section>
             <section></section>
         </>

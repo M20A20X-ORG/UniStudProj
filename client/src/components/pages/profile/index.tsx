@@ -1,5 +1,5 @@
-import React, { FC, useContext, useEffect, useState } from 'react';
-import { TUser } from 'types/rest/responses/auth';
+import React, { FC, JSX, useContext, useEffect, useState } from 'react';
+import { ACCESS_ROLE, TUser } from 'types/rest/responses/auth';
 import { TServerResponse } from 'types/rest/responses/serverResponse';
 import { TFuncResponse } from 'types/rest';
 import { TUserEdit, TUserJson } from 'types/rest/requests/user';
@@ -11,7 +11,7 @@ import { AuthContext } from 'context/Auth.context';
 
 import cn from 'classnames';
 import { getApi } from 'utils/getApi';
-import { fetchUsers } from 'utils/fetchUsers';
+import { fetchUrl } from 'utils/fetchUrl';
 import { getSavedToken } from 'utils/getSavedToken';
 
 import { TUserConstructorFormFilled, UserConstructorForm } from 'components/templates/userConstructorForm';
@@ -30,7 +30,7 @@ export const ProfilePage: FC = () => {
 
     /// ----- Handlers ----- ///
     /// --- Edit User --- ///
-    const uploadFile = async (file: File): Promise<TFuncResponse<string>> => {
+    const requestUploadFile = async (file: File): Promise<TFuncResponse<string>> => {
         const fileFormData: any = new FormData();
         fileFormData.append('event', 'file');
         fileFormData.append('file', file);
@@ -62,6 +62,7 @@ export const ProfilePage: FC = () => {
             return { message, type: 'error' };
         }
     };
+
     const updateUserInfo = async (formData: any): Promise<TFuncResponse<string>> => {
         const apiEdit = getApi('editUser');
         const requestInit: RequestInit = {
@@ -75,10 +76,12 @@ export const ProfilePage: FC = () => {
 
         try {
             const response = await fetch(apiEdit, requestInit);
+            if (response.status === 500) return { message: response.statusText, type: 'error' };
             const json = (await response.json()) as TServerResponse;
-            const message = json?.message || response.statusText;
 
+            const message = json?.message || response.statusText;
             if (!response.ok) return { message, type: 'error' };
+
             return { message, type: 'info' };
         } catch (error: unknown) {
             const { message } = error as Error;
@@ -92,13 +95,20 @@ export const ProfilePage: FC = () => {
         const { userId } = authContext;
         if (!userId) return modalContext?.openMessageModal("Can't edit unauthorized user!", 'error');
 
-        const fileUploadResponse = await uploadFile(formData.imgUrl);
-        if (fileUploadResponse.type === 'error')
-            return modalContext?.openMessageModal(fileUploadResponse.message, fileUploadResponse.type);
+        const formDataFiltered = Object.fromEntries(
+            Object.keys(formData)
+                .filter((key) => formData[key as keyof TUserConstructorFormFilled])
+                .map((key) => [key, formData[key as keyof TUserConstructorFormFilled]])
+        );
 
-        const editFormData = { ...formData, imgUrl: fileUploadResponse.payload };
-        const data: TUserJson<TUserEdit> = { user: { userId, ...editFormData } };
+        let imgUrl = '';
+        if (formData.imgUrl.name) {
+            const { message, type, payload: url } = await requestUploadFile(formData.imgUrl);
+            if (type === 'error' || !url) return modalContext?.openMessageModal(message, type);
+            imgUrl = url;
+        }
 
+        const data: TUserJson<TUserEdit> = { user: { userId, ...formDataFiltered, imgUrl } };
         const { message, type } = await updateUserInfo(data);
         modalContext?.openMessageModal(message, type);
 
@@ -115,12 +125,9 @@ export const ProfilePage: FC = () => {
         </div>
     );
 
-    const renderFormEdit = () => {
-        let initData = undefined;
-        if (userState) {
-            const { userId: _, role: __, ...rest } = userState;
-            initData = rest;
-        }
+    const renderFormEdit = (user: TUser | null): JSX.Element => {
+        if (!user) return <></>;
+        const { userId: _, role: __, ...initData } = user;
         return (
             <>
                 <UserConstructorForm
@@ -138,12 +145,15 @@ export const ProfilePage: FC = () => {
         );
     };
 
-    const renderProfile = () => {
-        const { email, group, name, imgUrl, username, about } = userState || {};
-
+    const renderProfile = (user: TUser | null) => {
+        const { userId, role, email, group, name, imgUrl, username, about } = user || {};
         const infoElem = (
             <>
-                <div className={s.head}>
+                <div className={cn('cardHead', s.profileCardHead)}>
+                    <span>Role: {role ? ACCESS_ROLE[role as keyof typeof ACCESS_ROLE] : '--'}</span>
+                    <span>User ID: {userId ?? '--'}</span>
+                </div>
+                <div className={s.profileCardCommon}>
                     <div>
                         <img
                             className={s.image}
@@ -151,26 +161,26 @@ export const ProfilePage: FC = () => {
                             alt={'profile image'}
                         />
                     </div>
-                    <ul className={s.info}>
-                        <span className={s.infoKey}>Name:</span>
+                    <ul className={'cardCommon'}>
+                        <span className={'cardKey'}>Name:</span>
                         <span>{name ?? '--'}</span>
-                        <span className={s.infoKey}>Group:</span>
+                        <span className={'cardKey'}>Group:</span>
                         <span>{group ?? '--'}</span>
-                        <span className={s.infoKey}>Email:</span>
+                        <span className={'cardKey'}>Email:</span>
                         <span>{email ?? '--'}</span>
-                        <span className={s.infoKey}>Username:</span>
+                        <span className={'cardKey'}>Username:</span>
                         <span>{username ?? '--'}</span>
                     </ul>
                 </div>
                 <div className={s.infoAbout}>
                     <span className={s.infoAboutKey}>About:</span>
-                    <span>{about ?? '--'}</span>
+                    <span className={s.infoAboutValue}>{about || '--'}</span>
                 </div>
                 {!userState || editState ? null : btnEditElem}
             </>
         );
 
-        return <>{editState ? renderFormEdit() : infoElem}</>;
+        return <>{editState ? renderFormEdit(userState) : infoElem}</>;
     };
 
     const updateUserState = async () => {
@@ -179,7 +189,7 @@ export const ProfilePage: FC = () => {
         const { userId } = authContext;
         if (!userId) return setUserState(null);
 
-        const { type, message, payload } = await fetchUsers([userId]);
+        const { type, message, payload } = await fetchUrl<TUser>('getUsers', 'userIdentifiers', [userId], 'user');
         const [user] = payload || [];
         if (type === 'error' || !user) {
             modalContext?.openMessageModal(message, type);
@@ -192,7 +202,7 @@ export const ProfilePage: FC = () => {
     /// ----- ComponentDidUpdate ------ ///
     useEffect(() => {
         updateUserState();
-    }, [authContext?.isLoggedIn]);
+    }, [authContext?.isLoggedIn, editState]);
 
-    return <section>{renderProfile()}</section>;
+    return <section>{renderProfile(userState)}</section>;
 };

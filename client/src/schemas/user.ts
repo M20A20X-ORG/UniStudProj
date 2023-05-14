@@ -13,7 +13,7 @@ export const userSchema: JSONSchemaType<TUser> = {
         username: {
             type: 'string'
         },
-        about: { type: 'string', nullable: true },
+        about: { type: 'string' },
         group: { type: 'string' }
     },
     required: ['userId', 'role', 'email', 'imgUrl', 'name', 'username', 'group'],

@@ -1,50 +1,29 @@
 @use "styles/global.scss" as g;
 
-$profile-img-size: 150px;
-$key-value-m: 30px;
-
-.info {
-  display: flex;
-  justify-content: space-between;
-
+.projectCard {
   &Common {
-    display: grid;
-    grid-gap: $key-value-m;
-    grid-template-rows: auto;
-    grid-template-columns: auto 1fr;
-    width: auto;
-    margin-right: 60px;
-  }
-
-  &Key {
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
   }
 
   &Participants {
     display: grid;
-    grid-gap: $key-value-m;
+    grid-gap: 0 g.$card-key-value-m;
     grid-template-rows: auto;
     grid-template-columns: auto 1fr;
   }
-}
-
-.tag {
-  flex-direction: row;
-  grid-template-columns: auto auto;
-  width: auto;
-  padding: 5px 10px;
-  border-radius: g.$br-medium;
-  background-color: g.$bg-black;
 }
 
 .description {
   @extend %fd-col;
 
-  margin-top: $key-value-m;
+  &CardKey {
+    margin-top: g.$card-key-value-m;
+    margin-bottom: 0.5 * g.$card-key-value-m;
+  }
 
-  .infoKey {
-    margin-bottom: 0.5 * $key-value-m;
-    text-align: left;
+  &CardValue {
+    text-indent: g.$content-par-indent;
   }
 }
 

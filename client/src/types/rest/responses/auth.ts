@@ -1,3 +1,10 @@
+export type TAccessRole = 'ROLE_ADMINISTRATOR' | 'ROLE_USER';
+
+export const ACCESS_ROLE: { [key in TAccessRole]: string } = Object.freeze({
+    ROLE_ADMINISTRATOR: 'Administrator',
+    ROLE_USER: 'User'
+});
+
 export type TAuth = {
     accessToken: string;
     refreshToken: string;
@@ -10,6 +17,6 @@ export type TUser = {
     imgUrl: string;
     name: string;
     email: string;
-    about?: string;
+    about: string;
     group: string;
 };

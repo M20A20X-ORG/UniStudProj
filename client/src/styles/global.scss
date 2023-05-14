@@ -7,14 +7,25 @@
 @use "./constants" as c;
 @use "./theme" as t;
 
-body {
-  @extend %fd-col, %v-c-h-c;
+.modal {
+  @extend %v-c-h-c;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(c.$modal-backdrop-blur-r) brightness(c.$modal-backdrop-brightness);
+
+  &Container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
 }
 
-:global(.modal) {
-  position: absolute;
-  z-index: 2;
-}
 
 /* Anchor */
 :global(.anchor) {
@@ -41,15 +52,16 @@ span.clickable {
 /* Content section w1240px */
 
 article {
-  margin-bottom: c.$main-elems-m-b;
+  margin-bottom: c.$section-m;
 }
 
+:global(.sectionLike),
 section {
-  margin-bottom: c.$main-elems-m-b;
+  margin-bottom: c.$section-m-small;
   padding: c.$section-p;
   overflow: hidden;
   background-color: t.$bg-grey-l1;
-  border-radius: t.$br-medium;
+  border-radius: t.$br-large;
 
   &:last-of-type {
     margin-bottom: 0;
@@ -103,6 +115,49 @@ section {
   border-radius: t.$br-medium;
   pointer-events: fill;
 }
+
+.tag {
+  flex-direction: row;
+  grid-template-columns: auto auto;
+  width: min-content;
+  margin-left: c.$section-m-small;
+  padding: 5px 10px;
+  font-size: c.$content-fz-small;
+  background-color: t.$bg-black;
+  border-radius: t.$br-medium;
+
+  &:first-of-type {
+    margin-left: 0;
+  }
+
+  &List {
+    display: flex;
+  }
+}
+
+
+.card {
+  &Head {
+    margin-bottom: c.$section-m-small;
+    font-size: c.$content-fz-small;
+    text-align: right;
+  }
+
+  &Common {
+    display: grid;
+    grid-gap: 0.5 * c.$card-key-value-m c.$card-key-value-m;
+    grid-template-rows: auto;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    width: auto;
+  }
+
+  &Key {
+    text-align: right;
+    text-transform: capitalize;
+  }
+}
+
 
 span, button {
   color: t.$txt-white;

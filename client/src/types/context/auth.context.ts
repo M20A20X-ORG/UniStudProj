@@ -6,7 +6,7 @@ export type TAuthLogout = () => void;
 
 export type TAuthState = {
     userId: number | null;
-    userRole: string | null;
+    role: string | null;
     isLoggedIn: boolean;
 };
 

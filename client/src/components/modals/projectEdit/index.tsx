@@ -112,19 +112,21 @@ export const ProjectEditForm: FC<ProjectEditProps> = (props) => {
 
     return (
         <div className={'modal'}>
-            <div className={'formWrapper'}>
-                <h2>Edit project</h2>
-                <ProjectConstructorForm
-                    handleFormSubmit={handleFormSubmit}
-                    actionType={'edit'}
-                    initData={initData}
-                />
-                <button
-                    className={cn('btn', 'clickable', s.btnCancel)}
-                    onClick={() => modalContext?.closeModal('custom')}
-                >
-                    Cancel
-                </button>
+            <div className={'modalContainer'}>
+                <div className={'formWrapper'}>
+                    <h2>Edit project</h2>
+                    <ProjectConstructorForm
+                        handleFormSubmit={handleFormSubmit}
+                        actionType={'edit'}
+                        initData={initData}
+                    />
+                    <button
+                        className={cn('btn', 'clickable', s.btnCancel)}
+                        onClick={() => modalContext?.closeModal('custom')}
+                    >
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     );
