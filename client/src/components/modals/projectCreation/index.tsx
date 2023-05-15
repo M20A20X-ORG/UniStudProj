@@ -2,7 +2,7 @@ import React, { FC, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TServerResponse } from 'types/rest/responses/serverResponse';
 import { TFuncResponse } from 'types/rest';
-import { TProjectCreation, TProjectJson, TProjectParticipantId } from 'types/rest/requests/project';
+import { TProjectCreation, TProjectEdit, TProjectJson, TProjectParticipantId } from 'types/rest/requests/project';
 import { EProjectAccessRole, TProjectId } from 'types/rest/responses/project';
 
 import { ContextError } from 'exceptions/ContextError';
@@ -14,9 +14,10 @@ import cn from 'classnames';
 import { getApi } from 'utils/getApi';
 import { getSavedToken } from 'utils/getSavedToken';
 
-import { ProjectConstructorForm, TProjectFormData } from 'components/templates/projectConstructorForm';
+import { ProjectConstructorForm, TProjectFormData } from 'components/templates/ProjectConstructorForm';
 
-import s from './projectCreation.module.scss';
+import { request } from 'utils/request';
+import s from './ProjectCreation.module.scss';
 
 export const ProjectCreationForm: FC = () => {
     const navigate = useNavigate();
@@ -24,12 +25,10 @@ export const ProjectCreationForm: FC = () => {
     const authContext = useContext(AuthContext);
     const modalContext = useContext(ModalContext);
 
-    const requestCreation = async (formData: TProjectFormData): Promise<TFuncResponse<TProjectId>> => {
+    const requestProjectCreation = async (formData: TProjectFormData): Promise<TFuncResponse<TProjectId>> => {
         if (!authContext) throw new ContextError('No Auth context!');
         if (!authContext.userId || !authContext.isLoggedIn)
             return { message: "Can't create project - user is not authorized!", type: 'error' };
-
-        const registrationApi = getApi('createProject');
 
         const { tags, participants, ...commonData } = formData;
         const newTagIds: number[] = tags.map(({ tagId }) => tagId);
@@ -46,33 +45,11 @@ export const ProjectCreationForm: FC = () => {
             ]
         };
         const data: TProjectJson<TProjectCreation> = { project };
-
-        const requestInit: RequestInit = {
-            method: 'POST',
-            headers: {
-                'Content-type': 'application/json;charset=utf-8',
-                authorization: getSavedToken('access-token')
-            },
-            body: JSON.stringify(data)
-        };
-
-        try {
-            const response = await fetch(registrationApi, requestInit);
-            if (response.status === 500) return { message: response.statusText, type: 'error' };
-            const json = (await response.json()) as TServerResponse<TProjectId>;
-
-            const message = json?.message || response.statusText;
-            if (!response.ok) return { message, type: 'error' };
-
-            return { message, type: 'info' };
-        } catch (error: unknown) {
-            const { message } = error as Error;
-            return { message, type: 'error' };
-        }
+        return request<TProjectId>('createProject', { method: 'POST', dataRaw: data }, 'user');
     };
 
     const handleFormSubmit = async (formData: TProjectFormData) => {
-        const { message, type, payload } = await requestCreation(formData);
+        const { message, type, payload } = await requestProjectCreation(formData);
         modalContext?.openMessageModal(message, type);
         if (type === 'info') modalContext?.closeModal('custom');
         if (payload?.projectId) navigate({ pathname: 'projects/' + payload.projectId });
@@ -88,7 +65,7 @@ export const ProjectCreationForm: FC = () => {
                         actionType={'create'}
                     />
                     <button
-                        className={cn('btn', 'clickable', s.btnCancel)}
+                        className={cn('btn', 'clickable', s.btn)}
                         onClick={() => modalContext?.closeModal('custom')}
                     >
                         Cancel

@@ -1,0 +1,92 @@
+@use "styles/global.scss" as g;
+
+$board-column-p: 20px;
+$board-column-head-w: 75%;
+$board-column-gap: g.$section-m;
+$board-column-body-gap: 15px;
+$task-w: 300px;
+$task-head-m-b: 20px;
+$task-head-m-b: 20px;
+
+.actions {
+  &Container {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  &Select {
+    border: none;
+    outline: none;
+    background-color: inherit;
+  }
+
+  &Btn {
+    font-size: 1em;
+  }
+}
+
+
+.task {
+  &Board {
+    display: flex;
+    gap: $board-column-gap;
+
+    &Wrapper {
+      @extend %fd-col;
+      width: 100%;
+    }
+  }
+
+  &Column {
+    padding: $board-column-p;
+    background-color: g.$bg-grey-l0;
+    border-radius: g.$br-medium;
+
+    &Head {
+      width: $board-column-head-w;
+      margin: 0 auto $task-head-m-b;
+      padding-bottom: $task-head-m-b;
+      font-style: italic;
+      text-align: center;
+      text-transform: uppercase;
+      border-bottom: g.$btn-border;
+    }
+
+    &Body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $board-column-body-gap;
+      justify-content: center;
+      max-width: 2 * $task-w + $board-column-body-gap;
+    }
+  }
+
+  &Item {
+    @extend %fd-col;
+
+    min-width: $task-w;
+    max-width: $task-w;
+    padding: g.$section-m-small;
+    background-color: g.$bg-grey-l1;
+    border-top: g.$btn-border;
+    border-bottom: g.$btn-border;
+    border-radius: g.$br-medium;
+    cursor: pointer;
+    user-select: none;
+
+    &Head {
+      @extend %v-c-h-sb;
+
+      margin-bottom: g.$section-m-small;
+    }
+
+    &Body {
+      word-wrap: break-word;
+    }
+
+    &TagList {
+      margin-top: g.$section-m-small;
+    }
+  }
+}
+

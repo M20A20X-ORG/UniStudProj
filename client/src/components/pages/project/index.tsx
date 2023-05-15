@@ -7,11 +7,12 @@ import { AuthContext } from 'context/Auth.context';
 import cn from 'classnames';
 import { useParams } from 'react-router-dom';
 
-import { fetchUrl } from 'utils/fetchUrl';
+import { request } from 'utils/request';
 
-import { ProjectEditForm } from 'components/modals/projectEdit';
+import { ProjectEditForm } from 'components/modals/ProjectEdit';
+import { TaskBoard } from 'components/pages/Project/Taskboard';
 
-import s from './project.module.scss';
+import s from './Project.module.scss';
 
 const PROJECT_FALLBACK: Partial<TProject> = {
     projectId: undefined,
@@ -37,6 +38,21 @@ export const ProjectPage: FC = () => {
     /// ----- State ----- ///
     const [projectState, setProjectState] = useState<TProject | null>(null);
     const [editSubmitToggle, toggleEditSubmit] = useState<boolean>(false);
+
+    const updateProjectState = async () => {
+        if (isNaN(projectId)) return;
+        const { message, type, payload } = await request<TProject[]>(
+            'getProject',
+            {
+                method: 'GET',
+                params: [['projectIds[]', projectId]]
+            },
+            'project'
+        );
+        const [projectData] = payload || [];
+        if (type === 'error' || !projectData) return modalContext?.openMessageModal(message, type);
+        setProjectState(projectData);
+    };
 
     /// ----- Render ----- ///
     const renderBtnEditElem = () => {
@@ -85,7 +101,7 @@ export const ProjectPage: FC = () => {
             const key = keyRaw as unknown as keyof typeof PROJECT_ACCESS_ROLE;
             return (
                 <>
-                    <span className={'cardKey'}>{PROJECT_ACCESS_ROLE[key]}:</span>
+                    <span className={'cardKey'}>{PROJECT_ACCESS_ROLE[key]}s:</span>
                     <ul className={'tagList'}>{participants[key] ?? '--'}</ul>
                 </>
             );
@@ -95,7 +111,7 @@ export const ProjectPage: FC = () => {
     };
 
     const renderProjectCommon = (project: TProject | null) => {
-        const { projectId, tags, participants, description, ...projectCommon } = project || PROJECT_FALLBACK;
+        const { projectId, tags, participants: _, description, ...projectCommon } = project || PROJECT_FALLBACK;
         const commonLiElems: JSX.Element[] = Object.keys(projectCommon).map((key) => {
             const value = projectCommon[key as keyof typeof projectCommon];
             return (
@@ -142,14 +158,6 @@ export const ProjectPage: FC = () => {
         );
     };
 
-    const updateProjectState = async () => {
-        if (isNaN(projectId)) return;
-        const { message, type, payload } = await fetchUrl<TProject>('getProject', 'projectIds', [projectId], 'project');
-        const [projectData] = payload || [];
-        if (type === 'error' || !projectData) return modalContext?.openMessageModal(message, type);
-        setProjectState(projectData);
-    };
-
     /// ----- ComponentDidUpdate ------ ///
     useEffect(() => {
         updateProjectState();
@@ -157,11 +165,15 @@ export const ProjectPage: FC = () => {
 
     return (
         <>
-            <section className={''}>
+            <section>
                 <div className={cn('card', s.projectCard)}>{renderProjectCommon(projectState)}</div>
                 {renderBtnEditElem()}
             </section>
-            <section></section>
+            {!projectState || !authContext?.isLoggedIn ? null : (
+                <section className={s.taskBoard}>
+                    <TaskBoard projectData={projectState} />
+                </section>
+            )}
         </>
     );
 };

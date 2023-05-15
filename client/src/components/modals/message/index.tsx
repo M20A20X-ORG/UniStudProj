@@ -5,7 +5,7 @@ import cn from 'classnames';
 
 import { ModalContext } from 'context/Modal.context';
 
-import s from './message.module.scss';
+import s from './Message.module.scss';
 
 interface MessageModalProps {
     initTime: number;

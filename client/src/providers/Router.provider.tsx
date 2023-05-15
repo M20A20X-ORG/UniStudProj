@@ -4,9 +4,9 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { PAGE_URL } from 'assets/static/url';
 import { LAYOUT_COMMON, LINKS, NAV_LINKS } from 'assets/static/layout';
 
-import { ProfilePage } from 'components/pages/profile';
-import { ProjectsPage } from 'components/pages/projects';
-import { ProjectPage } from 'components/pages/project';
+import { ProfilePage } from 'components/pages/Profile';
+import { ProjectsPage } from 'components/pages/Projects';
+import { ProjectPage } from 'components/pages/Project';
 
 import { Layout } from 'components/Layout';
 

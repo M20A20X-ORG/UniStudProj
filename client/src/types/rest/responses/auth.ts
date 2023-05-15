@@ -5,7 +5,7 @@ export const ACCESS_ROLE: { [key in TAccessRole]: string } = Object.freeze({
     ROLE_USER: 'User'
 });
 
-export type TAuth = {
+export type TLogin = Pick<TUser, 'userId' | 'role'> & {
     accessToken: string;
     refreshToken: string;
 };

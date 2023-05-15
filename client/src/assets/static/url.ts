@@ -16,8 +16,14 @@ export const API_URL = {
     getUsers: 'users/get',
     editUser: 'users/edit',
     createProject: 'projects/create',
-    getProjectTags: 'projects/tags/get',
     getProject: 'projects/get',
     editProject: 'projects/edit',
+    getProjectTags: 'projects/tags/get',
+    createProjectTask: 'projects/tasks/create',
+    getProjectTasks: 'projects/tasks/get',
+    editProjectTask: 'projects/tasks/edit',
+    deleteProjectTask: 'projects/tasks/delete',
+    getProjectTasksStatuses: 'projects/tasks/get/statuses',
+    getProjectTasksTags: 'projects/tasks/get/tags',
     uploadResource: 'resources/create'
 };

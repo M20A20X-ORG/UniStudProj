@@ -3,53 +3,29 @@
 $select-btn-size: g.$input-h - 8 * g.$select-p;
 $selected-p: 2 * g.$select-p;
 
-span.select::after {
-  top: g.$select-p;
+li.selectedTag {
+  padding: $selected-p;
 }
 
-.selectedList {
-  @extend %fd-col;
-
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  padding-right: g.$input-h;
-  background-color: inherit;
-  border-radius: inherit;
-  pointer-events: none;
-
-  &Tags {
-    flex-direction: row;
-    width: auto;
-  }
+span.closeBtn {
+  width: $select-btn-size;
+  height: $select-btn-size;
+  margin-right: 5px;
 }
 
-.selectedOption {
+ul.participantsSelect {
+  flex-direction: column;
+}
+
+li.participantTag {
   display: grid;
   grid-template-rows: 1fr;
-  grid-template-columns: auto 1fr 2fr;
-  align-items: center;
-  padding: g.$select-p;
-  padding-left: $selected-p;
-  background-color: g.$bg-grey-l1;
-  border-radius: g.$br-medium;
-
-  .closeBtn {
-    width: $select-btn-size;
-    height: $select-btn-size;
-    margin-right: 5px;
-  }
-
-  &Tag {
-    flex-direction: row;
-    grid-template-columns: auto auto;
-    width: auto;
-    padding: $selected-p;
-    padding-right: 10px;
-  }
+  grid-template-columns: auto 1fr 1fr;
+  min-width: 100%;
+  margin: 0;
 }
 
-span.projectRoleSelectWrapper {
+span.projectRoleSelect {
   align-items: center;
   height: $select-btn-size + $selected-p;
   min-height: unset;

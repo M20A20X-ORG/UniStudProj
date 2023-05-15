@@ -7,21 +7,25 @@ import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
 import { Link } from 'react-router-dom';
-import { fetchUrl } from 'utils/fetchUrl';
-
 import cn from 'classnames';
-import { ProjectCreationForm } from 'components/modals/projectCreation';
-import s from './projects.module.scss';
+import { request } from 'utils/request';
+
+import { ProjectCreationForm } from 'components/modals/ProjectCreation';
+
+import s from './Projects.module.scss';
 
 type TProjectCommon = Omit<TProject, 'projectId' | 'tags' | 'participants'>;
+
 const CREATE_PROJECT_VALUE = 'create';
 
 export const ProjectsPage: FC = () => {
+    /// ----- Context / State ----- ///
     const modalContext = useContext(ModalContext);
     const authContext = useContext(AuthContext);
 
     const [projectsState, setProjectsState] = useState<TProject[]>([]);
 
+    /// ----- Render ----- ///
     const renderProjectCard = (project: TProject) => {
         const { projectId, tags, participants: ___, ...projectCommon } = project;
         const commonLiElems: JSX.Element[] = Object.keys(projectCommon).map((key) => {
@@ -72,6 +76,7 @@ export const ProjectsPage: FC = () => {
         ));
     };
 
+    /// ----- Handlers ----- ///
     const handleActionSelectChange = (event: ChangeEvent<HTMLSelectElement>): void => {
         const { value } = event.currentTarget;
         event.currentTarget.value = '';
@@ -85,11 +90,12 @@ export const ProjectsPage: FC = () => {
             message,
             type,
             payload: projectsData
-        } = await fetchUrl<TProject>('getProject', 'projectIds', [], 'project', OPTIONS_LIMIT);
+        } = await request<TProject[]>('getProject', { method: 'GET', params: OPTIONS_LIMIT }, 'project');
         if (type === 'error' || !projectsData) return modalContext?.openMessageModal(message, type);
         setProjectsState(projectsData);
     };
 
+    /// ----- componentDidMount ----- ///
     useEffect(() => {
         updateProjectsState();
     }, []);

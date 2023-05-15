@@ -1,6 +1,6 @@
-import React, { ChangeEvent, FC, JSX, MouseEvent, useContext, useRef, useState } from 'react';
-import { TUser } from 'types/rest/responses/auth';
+import React, { ChangeEvent, FC, JSX, MouseEvent, useContext, useEffect, useRef, useState } from 'react';
 import { EProjectAccessRole, TProject, TProjectParticipant } from 'types/rest/responses/project';
+import { TUser } from 'types/rest/responses/auth';
 import { TTag } from 'types/rest/responses/tag';
 
 import { OPTIONS_LIMIT } from 'assets/static/common';
@@ -10,7 +10,9 @@ import { AuthContext } from 'context/Auth.context';
 
 import cn from 'classnames';
 import { formToObj } from 'utils/formToObj';
-import { fetchUrl } from 'utils/fetchUrl';
+import { request } from 'utils/request';
+
+import { Index } from 'components/atoms/SelectMultiple';
 
 import s from './projectConstructor.module.scss';
 
@@ -62,30 +64,18 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
         await handleFormSubmit(formDataFilled);
     };
 
-    const handleTagSelectChange = (event: ChangeEvent<HTMLSelectElement>): void => {
-        const tagId = +event.currentTarget.value;
-        setSelectedTagsState((prev) => {
-            const isTagSelected = prev.find((t) => t.tagId === tagId);
-            if (isTagSelected) return prev;
-
-            const selected = tagsState.find((t) => t.tagId === tagId);
-            if (!selected) return prev;
-
-            return [...prev, selected];
-        });
-    };
-
-    const handleTagsSelectClick = async (event: MouseEvent<HTMLSelectElement>): Promise<void> => {
-        event.currentTarget.value = '';
+    /// ----- REST ----- ///
+    const fetchTags = async (): Promise<void> => {
         const {
             message,
             type,
             payload: tags
-        } = await fetchUrl<TTag>('getProjectTags', 'projectIds', [], 'tag', OPTIONS_LIMIT);
+        } = await request<TTag[]>('getProjectTags', { method: 'GET', params: OPTIONS_LIMIT }, 'tag');
         if (type === 'error' || !tags) return modalContext?.openMessageModal(message, type);
         setTagsState(tags);
     };
 
+    /// ----- Handlers ----- ///
     const handleUserSelectChange = (event: ChangeEvent<HTMLSelectElement>): void => {
         const userId = +event.currentTarget.value;
         setSelectedUsersState((prev) => {
@@ -110,7 +100,7 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
             message,
             type,
             payload: usersRaw
-        } = await fetchUrl<TUser>('getUsers', 'userIdentifiers', [], 'user', OPTIONS_LIMIT);
+        } = await request<TUser[]>('getUsers', { method: 'GET', params: OPTIONS_LIMIT }, 'user');
         if (type === 'error' || !usersRaw) return modalContext?.openMessageModal(message, type);
         const users = usersRaw
             .map(({ userId, username }) => ({ userId, username }))
@@ -138,49 +128,12 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
     };
 
     /// ----- Render ----- ///
-    const renderTagsSelect = (): JSX.Element => {
-        const selectedElems: JSX.Element[] = selectedTagsState.map((tag) => (
-            <li
-                key={JSON.stringify(tag)}
-                className={cn(s.selectedOption, s.selectedOptionTag)}
-            >
-                <span
-                    className={cn('clickable', 'btnClose', s.closeBtn)}
-                    onClick={() => setSelectedTagsState((prev) => prev.filter((t) => t.tagId !== tag.tagId))}
-                />
-                <span>{tag.tag}</span>
-            </li>
-        ));
-        const optionElems: JSX.Element[] = tagsState.map((t) => (
-            <option
-                key={JSON.stringify(t)}
-                value={t.tagId}
-            >
-                {t.tag}
-            </option>
-        ));
-
-        return (
-            <span className={'selectWrapper'}>
-                <ul className={cn(s.selectedList, s.selectedListTags)}>{selectedElems}</ul>
-                <select
-                    name={TAGS_SELECT_NAME}
-                    defaultValue={''}
-                    onChange={handleTagSelectChange}
-                    onClick={handleTagsSelectClick}
-                >
-                    {optionElems}
-                </select>
-            </span>
-        );
-    };
-
     const renderUsersSelect = (): JSX.Element => {
         const selectedElems: JSX.Element[] = selectedUsersState.map((su) => (
             <li
                 key={JSON.stringify(su)}
                 value={su.userId}
-                className={s.selectedOption}
+                className={cn('tag', s.participantTag)}
             >
                 <span
                     className={cn('clickable', 'btnClose', s.closeBtn)}
@@ -189,7 +142,7 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
                     }}
                 />
                 <span>{su.username}</span>
-                <span className={cn('selectWrapper', s.projectRoleSelectWrapper)}>
+                <span className={cn('select', s.projectRoleSelect)}>
                     <select
                         required={isCreationAction}
                         defaultValue={su.projectRoleId}
@@ -212,9 +165,10 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
         ));
 
         return (
-            <span className={cn('selectWrapper', s.select)}>
-                <ul className={s.selectedList}>{selectedElems}</ul>
+            <span className={'select selectMultiple'}>
+                <ul className={cn('selectMultipleList', s.participantsSelect)}>{selectedElems}</ul>
                 <select
+                    multiple
                     name={PARTICIPANTS_SELECT_NAME}
                     defaultValue={''}
                     onChange={handleUserSelectChange}
@@ -225,6 +179,10 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
             </span>
         );
     };
+
+    useEffect(() => {
+        fetchTags();
+    }, []);
 
     return (
         <>
@@ -243,8 +201,19 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
                         defaultValue={initData?.description || undefined}
                         required={isCreationAction}
                     />
-
-                    {renderTagsSelect()}
+                    <Index
+                        name={TAGS_SELECT_NAME}
+                        state={{
+                            optionsState: [tagsState, setTagsState],
+                            selectedState: [selectedTagsState, setSelectedTagsState]
+                        }}
+                        data={{
+                            getId: (option) => (option as TTag).tagId,
+                            getText: (option) => (option as TTag).tag,
+                            requireFilterCallback: (id) => (option) => (option as TTag).tagId !== id,
+                            requireFindCallback: (id) => (option) => (option as TTag).tagId === id
+                        }}
+                    />
                     {renderUsersSelect()}
                     <div className={s.dates}>
                         <input

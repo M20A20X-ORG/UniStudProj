@@ -9,7 +9,7 @@ import { formToObj } from 'utils/formToObj';
 
 import { RegistrationForm } from 'components/modals/registration';
 
-import s from './login.module.scss';
+import s from './Login.module.scss';
 
 export const LogInForm: FC = () => {
     const modalContext = useContext(ModalContext);

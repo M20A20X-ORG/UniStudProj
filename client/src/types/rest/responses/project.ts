@@ -9,7 +9,7 @@ export enum EProjectAccessRole {
 
 export const PROJECT_ACCESS_ROLE: { [key in EProjectAccessRole]: string } = Object.freeze({
     [EProjectAccessRole.PROJECT_ROLE_OWNER]: 'Owner',
-    [EProjectAccessRole.PROJECT_ROLE_MANAGER]: 'Maneger',
+    [EProjectAccessRole.PROJECT_ROLE_MANAGER]: 'Manager',
     [EProjectAccessRole.PROJECT_ROLE_MENTOR]: 'Mentor',
     [EProjectAccessRole.PROJECT_ROLE_DEVELOPER]: 'Developer'
 });

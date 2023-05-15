@@ -11,13 +11,13 @@ import { AuthContext } from 'context/Auth.context';
 
 import cn from 'classnames';
 import { getApi } from 'utils/getApi';
-import { fetchUrl } from 'utils/fetchUrl';
+import { request } from 'utils/request';
 import { getSavedToken } from 'utils/getSavedToken';
 
 import { TUserConstructorFormFilled, UserConstructorForm } from 'components/templates/userConstructorForm';
 
 import imgProfileFallback from 'assets/images/profile/profile-image-fallback.jpg';
-import s from './profile.module.scss';
+import s from './Profile.module.scss';
 
 export const ProfilePage: FC = () => {
     /// --- Context --- ///
@@ -117,11 +117,13 @@ export const ProfilePage: FC = () => {
 
     /// --- Render --- ///
     const btnEditElem = (
-        <div
-            className={s.edit}
-            onClick={() => setEditState(true)}
-        >
-            <span className={'clickable'}>Edit</span>
+        <div className={s.edit}>
+            <span
+                className={'clickable'}
+                onClick={() => setEditState(true)}
+            >
+                Edit
+            </span>
         </div>
     );
 
@@ -189,7 +191,11 @@ export const ProfilePage: FC = () => {
         const { userId } = authContext;
         if (!userId) return setUserState(null);
 
-        const { type, message, payload } = await fetchUrl<TUser>('getUsers', 'userIdentifiers', [userId], 'user');
+        const { type, message, payload } = await request<TUser[]>(
+            'getUsers',
+            { method: 'GET', params: [['userIdentifiers[]', userId]] },
+            'user'
+        );
         const [user] = payload || [];
         if (type === 'error' || !user) {
             modalContext?.openMessageModal(message, type);

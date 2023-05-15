@@ -5,10 +5,10 @@ import { TFuncResponse } from 'types/rest';
 import { ModalContext } from 'context/Modal.context';
 import { getApi } from 'utils/getApi';
 
-import { LogInForm } from 'components/modals/login';
+import { LogInForm } from 'components/modals/Login';
 
 import { TUserConstructorFormFilled, UserConstructorForm } from 'components/templates/userConstructorForm';
-import s from './registration.module.scss';
+import s from './Registration.module.scss';
 
 export const RegistrationForm: FC = () => {
     const modalContext = useContext(ModalContext);

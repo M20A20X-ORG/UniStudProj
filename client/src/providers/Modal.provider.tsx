@@ -7,7 +7,7 @@ import { DEFAULT_MSG_TIME } from 'assets/static/common';
 
 import { ModalContext } from 'context/Modal.context';
 
-import { MessageModal } from 'components/modals/message';
+import { MessageModal } from 'components/modals/Message';
 
 type TModalState = { [key in TModal]: ReactPortal | null };
 

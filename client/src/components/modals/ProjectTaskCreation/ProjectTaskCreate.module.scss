@@ -1,0 +1,19 @@
+@use "styles/global.scss" as g;
+
+.taskContainer {
+  @extend %fd-col;
+
+  align-items: center;
+  margin-bottom: g.$input-m;
+  padding: g.$modal-p-v g.$modal-p-h;
+  color: g.$txt-white;
+  font-size: g.$content-fz;
+  font-family: g.$default-ff;
+  background-color: g.$bg-grey-l1;
+  border: g.$vw-1-px solid g.$bg-grey-l0;
+  border-radius: g.mn(g.$br-large);
+}
+
+.btn {
+  margin-top: g.$section-m-small;
+}

@@ -10,9 +10,9 @@ import cn from 'classnames';
 import { getApi } from 'utils/getApi';
 import { getSavedToken } from 'utils/getSavedToken';
 
-import { ProjectConstructorForm, TProjectFormData } from 'components/templates/projectConstructorForm';
+import { ProjectConstructorForm, TProjectFormData } from 'components/templates/ProjectConstructorForm';
 
-import s from './projectEdit.module.scss';
+import s from './ProjectEdit.module.scss';
 
 type TDiffCommon = Omit<Partial<TProjectFormData>, 'tags' | 'participants'>;
 
@@ -121,7 +121,7 @@ export const ProjectEditForm: FC<ProjectEditProps> = (props) => {
                         initData={initData}
                     />
                     <button
-                        className={cn('btn', 'clickable', s.btnCancel)}
+                        className={cn('btn', 'clickable', s.btn)}
                         onClick={() => modalContext?.closeModal('custom')}
                     >
                         Cancel

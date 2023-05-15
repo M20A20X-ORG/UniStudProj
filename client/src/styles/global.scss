@@ -26,7 +26,6 @@
   }
 }
 
-
 /* Anchor */
 :global(.anchor) {
   scroll-margin-top: c.$header-h;
@@ -92,8 +91,8 @@ section {
   height: c.$btn-h;
   color: t.$txt-white;
   background-color: t.$bg-grey-l0;
-  border-top: t.$btn-border-h;
-  border-bottom: t.$btn-border-h;
+  border-top: t.$btn-border;
+  border-bottom: t.$btn-border;
   border-radius: t.$br-medium;
 
   &Large {
@@ -110,21 +109,24 @@ section {
   background-repeat: no-repeat;
   background-position: 50%;
   background-size: 40%;
-  border-top: t.$btn-border-h;
-  border-bottom: t.$btn-border-h;
+  border-top: t.$btn-border;
+  border-bottom: t.$btn-border;
   border-radius: t.$br-medium;
   pointer-events: fill;
 }
 
 .tag {
-  flex-direction: row;
+  display: flex;
   grid-template-columns: auto auto;
-  width: min-content;
+  align-items: center;
+  width: max-content;
+  height: max-content;
   margin-left: c.$section-m-small;
   padding: 5px 10px;
   font-size: c.$content-fz-small;
   background-color: t.$bg-black;
   border-radius: t.$br-medium;
+  cursor: pointer;
 
   &:first-of-type {
     margin-left: 0;
@@ -134,7 +136,6 @@ section {
     display: flex;
   }
 }
-
 
 .card {
   &Head {

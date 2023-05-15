@@ -1,14 +1,14 @@
 import React, { FC, ReactNode, useContext, useState } from 'react';
 import { TAuthState } from 'types/context/auth.context';
 import { TServerResponse } from 'types/rest/responses/serverResponse';
-import { TAuth, TUser } from 'types/rest/responses/auth';
+import { TLogin } from 'types/rest/responses/auth';
 import { TFuncResponse } from 'types/rest';
 import { TUserJson, TUserLogIn } from 'types/rest/requests/user';
 
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
-import { getApi } from 'utils/getApi';
+import { request } from 'utils/request';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -29,32 +29,18 @@ export const AuthProvider: FC<AuthProviderProps> = (props) => {
             return { message: 'User already logged in!', type: 'error' };
         }
 
-        const loginApi = getApi('login');
         const data: TUserJson<TUserLogIn> = { user: login };
-        const requestInit: RequestInit = {
-            method: 'POST',
-            headers: { 'Content-type': 'application/json;charset=utf-8' },
-            body: JSON.stringify(data)
-        };
 
         try {
-            const response = await fetch(loginApi, requestInit);
-            if (response.status === 500) return { message: response.statusText, type: 'error' };
-            const json = (await response.json()) as TServerResponse<TUser> & TAuth;
+            const { message, payload: authData } = await request<TLogin>(
+                'login',
+                { method: 'POST', dataRaw: data },
+                'user/login'
+            );
 
-            const message = json?.message || response.statusText;
-            if (!response.ok) return { message, type: 'error' };
-
-            const { payload, refreshToken, accessToken } = json || {};
-            const { userId, role } = payload || {};
-
-            if (
-                typeof userId !== 'number' ||
-                typeof role !== 'string' ||
-                typeof accessToken !== 'string' ||
-                typeof refreshToken !== 'string'
-            )
-                return { message: `Incorrect response from server: ${message}`, type: 'error' };
+            const { userId, role, refreshToken, accessToken } = authData || {};
+            if (!userId || !role || !refreshToken || !accessToken)
+                return { message: 'Error logging in!', type: 'error' };
 
             localStorage.setItem('access-token', accessToken);
             localStorage.setItem('refresh-token', refreshToken);

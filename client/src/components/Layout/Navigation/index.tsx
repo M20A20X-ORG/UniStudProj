@@ -7,7 +7,7 @@ import cn from 'classnames';
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
-import { LogInForm } from 'components/modals/login';
+import { LogInForm } from 'components/modals/Login';
 
 import s from './Navigation.module.scss';
 
