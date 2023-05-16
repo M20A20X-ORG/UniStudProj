@@ -37,7 +37,7 @@ export const ProjectPage: FC = () => {
     /// ----- State ----- ///
     const [projectState, setProjectState] = useState<TProject | null>(null);
     const [editSubmitToggle, toggleEditSubmit] = useState<boolean>(false);
-    const [isParticipatingProject, setParticipatingProject] = useState<boolean | null>(null);
+    const [isParticipatingProject, setParticipatingProject] = useState<boolean>(false);
 
     const fetchProject = async () => {
         if (isNaN(projectId)) return;
@@ -166,12 +166,12 @@ export const ProjectPage: FC = () => {
     /// ----- ComponentDidUpdate ------ ///
     useEffect(() => {
         if (!projectState) fetchProject();
-        if (isParticipatingProject === null && projectState) {
+        if (projectState) {
             setParticipatingProject(
                 projectState?.participants.findIndex((u) => u.userId === authContext?.userId) !== -1
             );
         }
-    }, [editSubmitToggle, projectState]);
+    }, [editSubmitToggle, projectState, authContext?.userId]);
 
     return (
         <>
