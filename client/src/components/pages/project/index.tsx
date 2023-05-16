@@ -37,8 +37,9 @@ export const ProjectPage: FC = () => {
     /// ----- State ----- ///
     const [projectState, setProjectState] = useState<TProject | null>(null);
     const [editSubmitToggle, toggleEditSubmit] = useState<boolean>(false);
+    const [isParticipatingProject, setParticipatingProject] = useState<boolean | null>(null);
 
-    const updateProjectState = async () => {
+    const fetchProject = async () => {
         if (isNaN(projectId)) return;
         const { message, type, payload } = await request<TProject[]>(
             'getProject',
@@ -164,8 +165,13 @@ export const ProjectPage: FC = () => {
 
     /// ----- ComponentDidUpdate ------ ///
     useEffect(() => {
-        updateProjectState();
-    }, [editSubmitToggle]);
+        if (!projectState) fetchProject();
+        if (isParticipatingProject === null && projectState) {
+            setParticipatingProject(
+                projectState?.participants.findIndex((u) => u.userId === authContext?.userId) !== -1
+            );
+        }
+    }, [editSubmitToggle, projectState]);
 
     return (
         <>
@@ -173,7 +179,7 @@ export const ProjectPage: FC = () => {
                 <div className={cn('card', s.projectCard)}>{renderProjectCommon(projectState)}</div>
                 {renderBtnEditElem()}
             </section>
-            {!projectState || !authContext?.isLoggedIn ? null : (
+            {!projectState || !isParticipatingProject ? null : (
                 <section className={s.taskBoard}>
                     <TaskBoard projectData={projectState} />
                 </section>

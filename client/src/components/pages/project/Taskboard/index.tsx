@@ -34,7 +34,7 @@ export const TaskBoard: FC<TaskBoardProps> = ({ projectData }) => {
 
     const updateTasksState = async () => {
         if (isNaN(projectId)) return;
-        const { message, type, payload } = await request<TProjectTask[]>(
+        const { payload } = await request<TProjectTask[]>(
             'getProjectTasks',
             {
                 method: 'GET',
@@ -44,7 +44,6 @@ export const TaskBoard: FC<TaskBoardProps> = ({ projectData }) => {
             'project/task'
         );
         const tasksData = payload || [];
-        if (type === 'error') return modalContext?.openMessageModal(message, type);
         if (tasksData) setTasksState(tasksData);
     };
 
