@@ -1,22 +1,27 @@
 @use "styles/global.scss" as g;
 
-.wrapper {
+div.message {
+  cursor: pointer;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.messageContainer {
+  position: absolute;
   right: 5%;
   bottom: 5%;
   z-index: 3;
+  min-width: g.$error-msg-min-w;
   max-width: g.$error-msg-max-w;
-  overflow: hidden;
   border-radius: g.$br-small;
-}
-
-.container {
-  position: relative;
+  pointer-events: all;
 }
 
 .text {
   display: block;
   padding: 5px 30px;
   font-size: 0.75em;
+  word-break: break-all;
 }
 
 .timeBar {

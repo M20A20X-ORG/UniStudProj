@@ -29,14 +29,3 @@
   display: flex;
   flex-direction: column;
 }
-
-/* Form */
-%input {
-  height: c.$input-h;
-  margin-bottom: c.$input-m;
-  padding-left: c.$input-text-l-p;
-  font-size: c.$input-fz;
-  font-family: c.$default-ff;
-  background-color: t.$bg-grey-l0;
-  border-radius: t.$br-small;
-}

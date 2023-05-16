@@ -3,15 +3,16 @@ import React, { FC, useRef } from 'react';
 import { TUserRegistration } from 'types/rest/requests/user';
 
 import { formToObj } from 'utils/formToObj';
-import s from './userConstructor.module.scss';
 
-export type TConstructorForm = Omit<TUserRegistration, 'passwordConfirm' | 'password'>;
-export type TUserConstructorFormFilled = Omit<TConstructorForm, 'imgUrl'> & { imgUrl: File };
+import s from './UserConstructor.module.scss';
+
+export type TUserConstructorForm = Omit<TUserRegistration, 'imgUrl'> & { imgFile: File };
+export type TUserConstructorFormInit = Omit<TUserConstructorForm, 'imgFile' | 'password' | 'passwordConfirm'>;
 
 interface UserConstructorFormProps {
-    handleFormSubmit: (formData: TUserConstructorFormFilled) => Promise<void>;
+    handleFormSubmit: (formData: TUserConstructorForm) => Promise<void>;
     actionType: 'register' | 'edit';
-    initData?: TConstructorForm;
+    initData?: TUserConstructorFormInit;
 }
 
 export const UserConstructorForm: FC<UserConstructorFormProps> = (props) => {
@@ -32,39 +33,38 @@ export const UserConstructorForm: FC<UserConstructorFormProps> = (props) => {
                         type={'text'}
                         name={'name'}
                         placeholder={'Name:'}
-                        value={initData?.name}
+                        defaultValue={initData?.name}
                         required={isFieldsRequired}
                     />
                     <input
                         type={'text'}
                         name={'email'}
                         placeholder={'Email:'}
-                        value={initData?.email}
+                        defaultValue={initData?.email}
                         required={isFieldsRequired}
                     />
                     <input
                         type={'file'}
-                        name={'imgUrl'}
-                        required={isFieldsRequired}
+                        name={'imgFile'}
                     />
                     <input
                         type={'text'}
                         name={'username'}
                         placeholder={'Username:'}
-                        value={initData?.username}
+                        defaultValue={initData?.username}
                         required={isFieldsRequired}
                     />
                     <input
                         type={'text'}
                         name={'group'}
                         placeholder={'Group:'}
-                        value={initData?.group}
+                        defaultValue={initData?.group}
                         required={isFieldsRequired}
                     />
                     <textarea
                         name={'about'}
                         placeholder={'About:'}
-                        value={initData?.about}
+                        defaultValue={initData?.about}
                         required={isFieldsRequired}
                     />
                     <div className={s.passwords}>
@@ -87,7 +87,7 @@ export const UserConstructorForm: FC<UserConstructorFormProps> = (props) => {
                     className={'btn clickable'}
                     onClick={async (event) => {
                         event.preventDefault();
-                        const formData = formToObj(formRef) as TUserConstructorFormFilled;
+                        const formData = formToObj<TUserConstructorForm>(formRef);
                         await handleFormSubmit(formData);
                     }}
                 >

@@ -26,20 +26,20 @@ export const Layout: FC<LayoutProps> = (props) => {
     const [isMenuOpen, setMenuOpen] = useState(false);
 
     const btnLogoutElem = (
-        <div
+        <button
             className={cn('clickable', 'btn', s.btnLogout)}
             onClick={() => authContext?.logout()}
         >
             Logout
-        </div>
+        </button>
     );
     const menuBtnElem = (
-        <div
+        <button
             onClick={() => setMenuOpen(!isMenuOpen)}
             className={cn('btn', 'clickable', s.btnMenu)}
         >
             <span className={s.btnMenuLines}></span>
-        </div>
+        </button>
     );
 
     return (

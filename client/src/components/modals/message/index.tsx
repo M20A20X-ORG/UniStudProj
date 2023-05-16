@@ -5,7 +5,7 @@ import cn from 'classnames';
 
 import { ModalContext } from 'context/Modal.context';
 
-import s from './message.module.scss';
+import s from './Message.module.scss';
 
 interface MessageModalProps {
     initTime: number;
@@ -35,14 +35,22 @@ export const MessageModal: FC<MessageModalProps> = (props) => {
         return () => clearInterval(interval);
     }, [timeLeft, isMouseOver]);
 
+    useEffect(() => {
+        setTimeLeft(initialTime);
+    }, [modalContext?.modalElem.message]);
+
     return (
-        <div
-            className={cn({ [s.error]: type === 'error', [s.info]: type === 'info' }, 'modal', 'clickable', s.wrapper)}
-            onMouseEnter={() => setMouseOver(true)}
-            onMouseOut={() => setMouseOver(false)}
-            onClick={() => modalContext?.closeModal('message')}
-        >
-            <div className={s.container}>
+        <div className={cn('modal', s.message)}>
+            <div
+                className={cn(
+                    { [s.error]: type === 'error', [s.info]: type === 'info' },
+                    'clickable',
+                    s.messageContainer
+                )}
+                onMouseEnter={() => setMouseOver(true)}
+                onMouseOut={() => setMouseOver(false)}
+                onClick={() => modalContext?.closeModal('message')}
+            >
                 <span className={s.text}>{message}</span>
                 <div
                     style={{ width: (100 * timeLeft) / initialTime + '%' }}

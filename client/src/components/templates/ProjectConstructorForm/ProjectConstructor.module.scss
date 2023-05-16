@@ -1,0 +1,59 @@
+@use "styles/global.scss" as g;
+
+$select-btn-size: g.$input-h - 8 * g.$select-p;
+$selected-p: 2 * g.$select-p;
+
+li.selectedTag {
+  padding: $selected-p;
+}
+
+span.closeBtn {
+  width: $select-btn-size;
+  height: $select-btn-size;
+  margin-right: 5px;
+}
+
+ul.participantsSelect {
+  flex-direction: column;
+
+li.participantTag {
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-columns: auto 1fr 1fr;
+  min-width: 100%;
+  margin: 0;
+}
+
+span.projectRoleSelect {
+  align-items: center;
+  height: $select-btn-size + $selected-p;
+  min-height: unset;
+  margin-bottom: 0;
+  padding: 0 $selected-p;
+  pointer-events: all;
+
+  &::after {
+    width: $select-btn-size;
+    height: $select-btn-size;
+  }
+
+  select {
+    padding-left: 5px;
+  }
+}
+}
+
+.dates {
+  display: flex;
+
+  input {
+    display: flex;
+    flex-grow: 1;
+    padding-right: g.$input-text-p;
+    border-radius: g.$br-medium;
+  }
+
+  input:first-of-type {
+    margin-right: g.$input-m;
+  }
+}

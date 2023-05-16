@@ -4,7 +4,9 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { PAGE_URL } from 'assets/static/url';
 import { LAYOUT_COMMON, LINKS, NAV_LINKS } from 'assets/static/layout';
 
-import { ProfilePage } from 'components/pages/profile';
+import { ProfilePage } from 'components/pages/Profile';
+import { ProjectsPage } from 'components/pages/Projects';
+import { ProjectPage } from 'components/pages/Project';
 
 import { Layout } from 'components/Layout';
 
@@ -16,7 +18,10 @@ export const RouterProvider = () =>
         <Route path={PAGE_URL.profile} element={<ProfilePage />} />
         <Route path={PAGE_URL.main} element={<>main</>} />
         <Route path={PAGE_URL.about} element={<>about</>} />
-        <Route path={PAGE_URL.projects} element={<>projects</>} />
+        <Route path={PAGE_URL.projects}>
+          <Route index element={<ProjectsPage />} />
+          <Route path={":id"} element={<ProjectPage />} />
+        </Route>
         <Route path={PAGE_URL.tests} element={<>tests</>} />
         <Route path={PAGE_URL.news} element={<>news</>} />
         <Route path={PAGE_URL.metrics} element={<>metrics</>} />

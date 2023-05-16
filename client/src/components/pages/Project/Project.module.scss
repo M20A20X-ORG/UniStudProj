@@ -1,0 +1,44 @@
+@use "styles/global.scss" as g;
+
+.projectCard {
+  &Common {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  &Participants {
+    display: grid;
+    grid-gap: 0 g.$card-key-value-m;
+    grid-template-rows: auto;
+    grid-template-columns: auto 1fr;
+  }
+}
+
+.description {
+  @extend %fd-col;
+
+  &CardKey {
+    margin-top: g.$card-key-value-m;
+    margin-bottom: 0.5 * g.$card-key-value-m;
+  }
+
+  &CardValue {
+    text-indent: g.$content-par-indent;
+  }
+}
+
+.edit {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: g.$section-m-small;
+  font-size: g.$content-fz-small;
+}
+
+.btnCancelEdit {
+  margin: 0 auto;
+}
+
+.taskBoard {
+  display: flex;
+  justify-content: center;
+}

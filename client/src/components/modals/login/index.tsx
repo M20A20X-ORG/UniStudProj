@@ -7,9 +7,9 @@ import { AuthContext } from 'context/Auth.context';
 
 import { formToObj } from 'utils/formToObj';
 
-import { RegistrationForm } from 'components/modals/registration';
+import { RegistrationForm } from 'components/modals/Registration';
 
-import s from './login.module.scss';
+import s from './Login.module.scss';
 
 export const LogInForm: FC = () => {
     const modalContext = useContext(ModalContext);
@@ -20,51 +20,52 @@ export const LogInForm: FC = () => {
     const handleFormSubmit = async (event: MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         if (!authContext) throw new ContextError('No Auth Context!');
-        if (!modalContext) throw new ContextError('No Modal Context!');
 
-        const loginData = formToObj(formRef) as TUserLogIn;
+        const loginData = formToObj<TUserLogIn>(formRef);
         const loginResponse = await authContext.login(loginData);
         const { type, message } = loginResponse;
 
-        modalContext.openMessageModal(message, type);
-        if (loginResponse.type === 'info') modalContext.closeModal('custom');
+        modalContext?.openMessageModal(message, type);
+        if (loginResponse.type === 'info') modalContext?.closeModal('custom');
     };
 
     return (
         <div className={'modal'}>
-            <div className={'formWrapper'}>
-                <h2>Log In</h2>
-                <form
-                    ref={formRef}
-                    className={s.loginForm}
-                >
-                    <fieldset className={'fieldset'}>
-                        <input
-                            type={'text'}
-                            name={'username'}
-                            placeholder={'Username:'}
-                        />
-                        <input
-                            type={'password'}
-                            name={'password'}
-                            placeholder={'Password:'}
-                        />
-                    </fieldset>
-                    <button
-                        type={'submit'}
-                        className={'btn clickable'}
-                        onClick={(event) => handleFormSubmit(event)}
+            <div className={'modalContainer'}>
+                <div className={'formWrapper'}>
+                    <h2>Log In</h2>
+                    <form
+                        ref={formRef}
+                        className={s.loginForm}
                     >
-                        Log In
-                    </button>
-                </form>
-                <div className={s.register}>
-                    <span
-                        className={'clickable'}
-                        onClick={() => modalContext?.openModal(<RegistrationForm />, 'custom')}
-                    >
-                        Don&apos;t have account? Register now!
-                    </span>
+                        <fieldset className={'fieldset'}>
+                            <input
+                                type={'text'}
+                                name={'username'}
+                                placeholder={'Username:'}
+                            />
+                            <input
+                                type={'password'}
+                                name={'password'}
+                                placeholder={'Password:'}
+                            />
+                        </fieldset>
+                        <button
+                            type={'submit'}
+                            className={'btn clickable'}
+                            onClick={(event) => handleFormSubmit(event)}
+                        >
+                            Log In
+                        </button>
+                    </form>
+                    <div className={s.register}>
+                        <span
+                            className={'clickable'}
+                            onClick={() => modalContext?.openModal(<RegistrationForm />, 'custom')}
+                        >
+                            Don&apos;t have account? Register now!
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

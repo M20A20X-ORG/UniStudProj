@@ -1,0 +1,14 @@
+@use "styles/global.scss" as g;
+
+$select-btn-size: g.$input-h - 8 * g.$select-p;
+$selected-p: 2 * g.$select-p;
+
+li.selectedTag {
+  padding: $selected-p;
+}
+
+span.closeBtn {
+  width: $select-btn-size;
+  height: $select-btn-size;
+  margin-right: 5px;
+}

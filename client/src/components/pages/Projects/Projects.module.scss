@@ -1,0 +1,27 @@
+@use "styles/global.scss" as g;
+
+.projectCardCommon {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-auto-flow: row;
+}
+
+.projectsHeader {
+  margin: 0 auto;
+}
+
+.actions {
+  &Container {
+    display: flex;
+    justify-content: flex-end;
+    padding-right: g.$content-p;
+  }
+
+  &Select {
+    border: none;
+    outline: none;
+  }
+
+  &Btn {
+    font-size: 1em;
+  }
+}
