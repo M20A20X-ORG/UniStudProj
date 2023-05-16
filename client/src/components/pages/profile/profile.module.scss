@@ -1,6 +1,7 @@
 @use "styles/global.scss" as g;
 
 $profile-img-size: 150px;
+$btn-m-b: 15px;
 
 .profileCard {
   &Head, &Common {
@@ -39,6 +40,9 @@ $profile-img-size: 150px;
   font-size: g.$content-fz-small;
 }
 
-.btnCancelEdit {
+.btn {
   margin: 0 auto;
+  &:first-of-type {
+    margin-bottom: $btn-m-b;
+  }
 }

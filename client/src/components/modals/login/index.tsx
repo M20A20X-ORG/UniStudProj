@@ -7,7 +7,7 @@ import { AuthContext } from 'context/Auth.context';
 
 import { formToObj } from 'utils/formToObj';
 
-import { RegistrationForm } from 'components/modals/registration';
+import { RegistrationForm } from 'components/modals/Registration';
 
 import s from './Login.module.scss';
 

@@ -1,5 +1,5 @@
-import React, { ChangeEvent, FC, JSX, MouseEvent, useContext, useEffect, useRef, useState } from 'react';
-import { EProjectAccessRole, TProject, TProjectParticipant } from 'types/rest/responses/project';
+import React, { ChangeEvent, FC, FormEvent, MouseEvent, useContext, useEffect, useRef, useState } from 'react';
+import { EProjectAccessRole, PROJECT_ACCESS_ROLE, TProject, TProjectParticipant } from 'types/rest/responses/project';
 import { TUser } from 'types/rest/responses/auth';
 import { TTag } from 'types/rest/responses/tag';
 
@@ -7,22 +7,30 @@ import { OPTIONS_LIMIT } from 'assets/static/common';
 
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
-
-import cn from 'classnames';
 import { formToObj } from 'utils/formToObj';
 import { request } from 'utils/request';
 
-import { Index } from 'components/atoms/SelectMultiple';
+import { SelectMultiple } from 'components/atoms/SelectMultiple';
 
-import s from './projectConstructor.module.scss';
+import { TGetPropCallback } from 'utils/diffArrays';
+import { Select } from 'components/atoms/Select';
+import s from './ProjectConstructor.module.scss';
 
-type TParticipantOption = Pick<TUser, 'userId' | 'username'>;
+type TProjectRole = Pick<TProjectParticipant, 'projectRoleId' | 'projectRole'>;
 type TFormInitialData = Omit<TProject, 'projectId' | 'participantsAmount' | 'tagsAmount'>;
 export type TProjectFormData = Required<TFormInitialData>;
 export type TProjectFormCommonData = Omit<TProjectFormData, 'tags' | 'participants'>;
 
 const TAGS_SELECT_NAME = 'tags';
 const PARTICIPANTS_SELECT_NAME = 'participants';
+
+const PROJECT_ROLES: TProjectRole[] = Object.entries(PROJECT_ACCESS_ROLE).map(([key, value]) => ({
+    projectRoleId: +key,
+    projectRole: value
+}));
+
+const getTagId: TGetPropCallback<TTag, number> = (tag) => tag.tagId;
+const getParticipantId: TGetPropCallback<TProjectParticipant, number> = (user) => user.userId;
 
 interface ProjectConstructorFormProps {
     handleFormSubmit: (formData: TProjectFormData) => Promise<void>;
@@ -42,7 +50,7 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
     /// ----- State ----- ///
     const [tagsState, setTagsState] = useState<TTag[]>([]);
     const [selectedTagsState, setSelectedTagsState] = useState<TTag[]>(initData?.tags || []);
-    const [usersState, setUsersState] = useState<TParticipantOption[]>([]);
+    const [usersState, setUsersState] = useState<TProjectParticipant[]>([]);
     const [selectedUsersState, setSelectedUsersState] = useState<TProjectParticipant[]>(initData?.participants || []);
 
     /// ----- Handlers ----- ///
@@ -75,6 +83,19 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
         setTagsState(tags);
     };
 
+    const fetchUsers = async (): Promise<void> => {
+        const {
+            message,
+            type,
+            payload: usersRaw
+        } = await request<TUser[]>('getUsers', { method: 'GET', params: OPTIONS_LIMIT }, 'user');
+        if (type === 'error' || !usersRaw) return modalContext?.openMessageModal(message, type);
+        const users: TProjectParticipant[] = usersRaw
+            .map((u) => ({ userId: u.userId, username: u.username, projectRoleId: 0, projectRole: '' }))
+            .filter((u) => u.userId !== authContext?.userId);
+        setUsersState(users);
+    };
+
     /// ----- Handlers ----- ///
     const handleUserSelectChange = (event: ChangeEvent<HTMLSelectElement>): void => {
         const userId = +event.currentTarget.value;
@@ -94,21 +115,7 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
         });
     };
 
-    const handleUserSelectClick = async (event: MouseEvent<HTMLSelectElement>): Promise<void> => {
-        event.currentTarget.value = '';
-        const {
-            message,
-            type,
-            payload: usersRaw
-        } = await request<TUser[]>('getUsers', { method: 'GET', params: OPTIONS_LIMIT }, 'user');
-        if (type === 'error' || !usersRaw) return modalContext?.openMessageModal(message, type);
-        const users = usersRaw
-            .map(({ userId, username }) => ({ userId, username }))
-            .filter((u) => u.userId !== authContext?.userId);
-        setUsersState(users);
-    };
-
-    const handleRoleSelectChange = (event: ChangeEvent<HTMLSelectElement>, userId: number) => {
+    const handleRoleSelectChange = (event: FormEvent<HTMLSelectElement>, userId: number) => {
         const selectedRoleId = +event.currentTarget.value;
         setSelectedUsersState((prev) => {
             const changedUserIndex = prev.findIndex((u) => u.userId === userId);
@@ -127,62 +134,11 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
         });
     };
 
-    /// ----- Render ----- ///
-    const renderUsersSelect = (): JSX.Element => {
-        const selectedElems: JSX.Element[] = selectedUsersState.map((su) => (
-            <li
-                key={JSON.stringify(su)}
-                value={su.userId}
-                className={cn('tag', s.participantTag)}
-            >
-                <span
-                    className={cn('clickable', 'btnClose', s.closeBtn)}
-                    onClick={() => {
-                        setSelectedUsersState((prev) => prev.filter((u) => u.userId !== su.userId));
-                    }}
-                />
-                <span>{su.username}</span>
-                <span className={cn('select', s.projectRoleSelect)}>
-                    <select
-                        required={isCreationAction}
-                        defaultValue={su.projectRoleId}
-                        onChange={(event) => handleRoleSelectChange(event, su.userId)}
-                    >
-                        <option value={EProjectAccessRole.PROJECT_ROLE_MANAGER}>Manager</option>
-                        <option value={EProjectAccessRole.PROJECT_ROLE_MENTOR}>Mentor</option>
-                        <option value={EProjectAccessRole.PROJECT_ROLE_DEVELOPER}>Developer</option>
-                    </select>
-                </span>
-            </li>
-        ));
-        const optionElems: JSX.Element[] = usersState.map((u) => (
-            <option
-                key={JSON.stringify(u)}
-                value={u.userId}
-            >
-                {u.username}
-            </option>
-        ));
-
-        return (
-            <span className={'select selectMultiple'}>
-                <ul className={cn('selectMultipleList', s.participantsSelect)}>{selectedElems}</ul>
-                <select
-                    multiple
-                    name={PARTICIPANTS_SELECT_NAME}
-                    defaultValue={''}
-                    onChange={handleUserSelectChange}
-                    onClick={handleUserSelectClick}
-                >
-                    {optionElems}
-                </select>
-            </span>
-        );
-    };
-
     useEffect(() => {
+        if (!authContext?.isLoggedIn || !authContext?.userId) return;
         fetchTags();
-    }, []);
+        fetchUsers();
+    }, [authContext?.isLoggedIn]);
 
     return (
         <>
@@ -201,20 +157,47 @@ export const ProjectConstructorForm: FC<ProjectConstructorFormProps> = (props) =
                         defaultValue={initData?.description || undefined}
                         required={isCreationAction}
                     />
-                    <Index
+                    <SelectMultiple<TTag>
                         name={TAGS_SELECT_NAME}
                         state={{
                             optionsState: [tagsState, setTagsState],
                             selectedState: [selectedTagsState, setSelectedTagsState]
                         }}
                         data={{
-                            getId: (option) => (option as TTag).tagId,
-                            getText: (option) => (option as TTag).tag,
-                            requireFilterCallback: (id) => (option) => (option as TTag).tagId !== id,
-                            requireFindCallback: (id) => (option) => (option as TTag).tagId === id
+                            getId: getTagId,
+                            getText: (tag: TTag) => tag.tag
                         }}
                     />
-                    {renderUsersSelect()}
+                    <SelectMultiple<TProjectParticipant>
+                        name={PARTICIPANTS_SELECT_NAME}
+                        defaultValue={['']}
+                        data={{
+                            getId: getParticipantId,
+                            getText: (u) => u.username,
+                            getDefaultValue: (u) => u.projectRoleId
+                        }}
+                        state={{
+                            optionsState: [usersState, setUsersState],
+                            selectedState: [selectedUsersState, setSelectedUsersState]
+                        }}
+                        onChange={handleUserSelectChange}
+                        classNames={{
+                            list: s.participantsSelect,
+                            listElem: s.participantTag
+                        }}
+                        requireInnerLogic={(optionId, initRole) => (
+                            <Select<TProjectRole>
+                                className={s.projectRoleSelect}
+                                defaultValue={initRole}
+                                data={{
+                                    options: PROJECT_ROLES,
+                                    getId: (role) => role.projectRoleId,
+                                    getText: (role) => role.projectRole
+                                }}
+                                onChange={(event) => handleRoleSelectChange(event, optionId)}
+                            />
+                        )}
+                    />
                     <div className={s.dates}>
                         <input
                             type={'date'}

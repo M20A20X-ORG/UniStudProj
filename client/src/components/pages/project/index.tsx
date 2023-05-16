@@ -1,5 +1,5 @@
 import React, { FC, JSX, useContext, useEffect, useState } from 'react';
-import { EProjectAccessRole, PROJECT_ACCESS_ROLE, TProject } from 'types/rest/responses/project';
+import { EProjectAccessRole, PROJECT_ACCESS_ROLE, TProject, TProjectParticipant } from 'types/rest/responses/project';
 
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
@@ -11,7 +11,6 @@ import { request } from 'utils/request';
 
 import { ProjectEditForm } from 'components/modals/ProjectEdit';
 import { TaskBoard } from 'components/pages/Project/Taskboard';
-
 import s from './Project.module.scss';
 
 const PROJECT_FALLBACK: Partial<TProject> = {
@@ -84,19 +83,24 @@ export const ProjectPage: FC = () => {
         return <>{authContext?.isLoggedIn && isProjectOwner ? btnElem : null}</>;
     };
 
-    const renderParticipants = (): JSX.Element => {
-        const participantEntries: [EProjectAccessRole, JSX.Element][] | undefined = projectState?.participants.map(
-            (p) => [
-                p.projectRoleId,
+    const renderParticipants = (users: TProjectParticipant[] | undefined): JSX.Element => {
+        const participants: Record<string, JSX.Element[]> = {};
+        users?.forEach((u) => {
+            const userElem = (
                 <li
-                    key={JSON.stringify(p)}
+                    key={JSON.stringify(u)}
                     className={'tag'}
                 >
-                    {p.username}
+                    {u.username}
                 </li>
-            ]
-        );
-        const participants = Object.fromEntries(participantEntries || []);
+            );
+
+            const key = u.projectRoleId;
+            const isExists = participants[key];
+            if (isExists) isExists.push(userElem);
+            else participants[key] = [userElem];
+        });
+
         const participantsELem = Object.keys(PROJECT_ACCESS_ROLE).map((keyRaw) => {
             const key = keyRaw as unknown as keyof typeof PROJECT_ACCESS_ROLE;
             return (
@@ -147,7 +151,7 @@ export const ProjectPage: FC = () => {
                         {tagsLiElem}
                     </ul>
                     <ul className={cn('cardCommon', s.projectCardParticipants)}>
-                        <>{renderParticipants()}</>
+                        <>{renderParticipants(projectState?.participants)}</>
                     </ul>
                 </div>
                 <div className={s.description}>

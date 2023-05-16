@@ -1,7 +1,5 @@
 import React, { FC, JSX, useContext, useEffect, useState } from 'react';
 import { ACCESS_ROLE, TUser } from 'types/rest/responses/auth';
-import { TServerResponse } from 'types/rest/responses/serverResponse';
-import { TFuncResponse } from 'types/rest';
 import { TUserEdit, TUserJson } from 'types/rest/requests/user';
 
 import { ContextError } from 'exceptions/ContextError';
@@ -10,11 +8,10 @@ import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
 import cn from 'classnames';
-import { getApi } from 'utils/getApi';
 import { request } from 'utils/request';
-import { getSavedToken } from 'utils/getSavedToken';
+import { requestFileUpload } from 'utils/requestFileUpload';
 
-import { TUserConstructorFormFilled, UserConstructorForm } from 'components/templates/userConstructorForm';
+import { TUserConstructorForm, UserConstructorForm } from 'components/templates/UserConstructorForm';
 
 import imgProfileFallback from 'assets/images/profile/profile-image-fallback.jpg';
 import s from './Profile.module.scss';
@@ -28,88 +25,70 @@ export const ProfilePage: FC = () => {
     const [userState, setUserState] = useState<TUser | null>(null);
     const [editState, setEditState] = useState<boolean>(false);
 
+    /// --- REST --- ///
+    const fetchUser = async () => {
+        if (!authContext) throw new ContextError('No Auth Context!');
+
+        const { userId } = authContext;
+        if (!userId) return setUserState(null);
+
+        const { type, message, payload } = await request<TUser[]>(
+            'getUsers',
+            { method: 'GET', params: [['userIdentifiers[]', userId]] },
+            'user'
+        );
+        const [user] = payload || [];
+        if (type === 'error' || !user) {
+            modalContext?.openMessageModal(message, type);
+            return setUserState(null);
+        }
+
+        setUserState(user);
+    };
+
+    const deleteUser = async () => {
+        if (!authContext) throw new ContextError('No Auth context!');
+
+        const { userId } = authContext;
+        if (!userId) return setUserState(null);
+
+        const { type, message } = await request('deleteUser', {
+            method: 'DELETE',
+            params: [['userId', userId]]
+        });
+        modalContext?.openMessageModal(message, type);
+        authContext.logout();
+    };
+
     /// ----- Handlers ----- ///
     /// --- Edit User --- ///
-    const requestUploadFile = async (file: File): Promise<TFuncResponse<string>> => {
-        const fileFormData: any = new FormData();
-        fileFormData.append('event', 'file');
-        fileFormData.append('file', file);
-
-        const apiCreateResource = getApi('uploadResource');
-        const requestInit: RequestInit = {
-            method: 'POST',
-            headers: {
-                authorization: getSavedToken('access-token')
-            },
-            body: fileFormData
-        };
-
-        try {
-            const response = await fetch(apiCreateResource, requestInit);
-            const json = (await response.json()) as TServerResponse<string[]>;
-
-            const message = json?.message || response.statusText;
-            const { payload } = json || {};
-            const [url] = payload || [];
-
-            if (!response.ok) return { message, type: 'error' };
-            if (typeof url !== 'string')
-                return { message: `Incorrect response from server: ${message}`, type: 'error' };
-
-            return { message, type: 'info', payload: url };
-        } catch (error: unknown) {
-            const { message } = error as Error;
-            return { message, type: 'error' };
-        }
-    };
-
-    const updateUserInfo = async (formData: any): Promise<TFuncResponse<string>> => {
-        const apiEdit = getApi('editUser');
-        const requestInit: RequestInit = {
-            method: 'PUT',
-            headers: {
-                'Content-type': 'application/json;charset=utf-8',
-                authorization: getSavedToken('access-token')
-            },
-            body: JSON.stringify(formData)
-        };
-
-        try {
-            const response = await fetch(apiEdit, requestInit);
-            if (response.status === 500) return { message: response.statusText, type: 'error' };
-            const json = (await response.json()) as TServerResponse;
-
-            const message = json?.message || response.statusText;
-            if (!response.ok) return { message, type: 'error' };
-
-            return { message, type: 'info' };
-        } catch (error: unknown) {
-            const { message } = error as Error;
-            return { message, type: 'error' };
-        }
-    };
-
-    const handleUserEditSubmit = async (formData: TUserConstructorFormFilled): Promise<void> => {
+    const handleUserEditSubmit = async (formData: TUserConstructorForm): Promise<void> => {
         if (!authContext) throw new ContextError('No Auth Context!');
 
         const { userId } = authContext;
         if (!userId) return modalContext?.openMessageModal("Can't edit unauthorized user!", 'error');
 
+        const { imgFile, ...dataNoImg } = formData;
         const formDataFiltered = Object.fromEntries(
-            Object.keys(formData)
-                .filter((key) => formData[key as keyof TUserConstructorFormFilled])
-                .map((key) => [key, formData[key as keyof TUserConstructorFormFilled]])
+            Object.keys(dataNoImg)
+                .filter((key) => formData[key as keyof TUserConstructorForm])
+                .map((key) => [key, formData[key as keyof TUserConstructorForm]])
         );
 
         let imgUrl = '';
-        if (formData.imgUrl.name) {
-            const { message, type, payload: url } = await requestUploadFile(formData.imgUrl);
+        if (imgFile.name) {
+            const { message, type, payload: url } = await requestFileUpload(imgFile);
             if (type === 'error' || !url) return modalContext?.openMessageModal(message, type);
             imgUrl = url;
         }
 
         const data: TUserJson<TUserEdit> = { user: { userId, ...formDataFiltered, imgUrl } };
-        const { message, type } = await updateUserInfo(data);
+        const { message, type } = await request('editUser', {
+            method: 'PUT',
+            dataRaw: data
+        });
+
+        if (type === 'error') return modalContext?.openMessageModal(message, type);
         modalContext?.openMessageModal(message, type);
 
         if (type === 'info') setEditState(false);
@@ -129,7 +108,7 @@ export const ProfilePage: FC = () => {
 
     const renderFormEdit = (user: TUser | null): JSX.Element => {
         if (!user) return <></>;
-        const { userId: _, role: __, ...initData } = user;
+        const { userId: _, role: __, imgUrl: ___, ...initData } = user;
         return (
             <>
                 <UserConstructorForm
@@ -138,7 +117,16 @@ export const ProfilePage: FC = () => {
                     initData={initData}
                 />
                 <button
-                    className={cn('btn', 'clickable', s.btnCancelEdit)}
+                    className={cn('btn', 'clickable', s.btn)}
+                    onClick={async () => {
+                        await deleteUser();
+                        setEditState(false);
+                    }}
+                >
+                    Delete
+                </button>
+                <button
+                    className={cn('btn', 'clickable', s.btn)}
                     onClick={() => setEditState(false)}
                 >
                     Cancel
@@ -185,29 +173,9 @@ export const ProfilePage: FC = () => {
         return <>{editState ? renderFormEdit(userState) : infoElem}</>;
     };
 
-    const updateUserState = async () => {
-        if (!authContext) throw new ContextError('No Auth Context!');
-
-        const { userId } = authContext;
-        if (!userId) return setUserState(null);
-
-        const { type, message, payload } = await request<TUser[]>(
-            'getUsers',
-            { method: 'GET', params: [['userIdentifiers[]', userId]] },
-            'user'
-        );
-        const [user] = payload || [];
-        if (type === 'error' || !user) {
-            modalContext?.openMessageModal(message, type);
-            return setUserState(null);
-        }
-
-        setUserState(user);
-    };
-
     /// ----- ComponentDidUpdate ------ ///
     useEffect(() => {
-        updateUserState();
+        fetchUser();
     }, [authContext?.isLoggedIn, editState]);
 
     return <section>{renderProfile(userState)}</section>;

@@ -10,7 +10,7 @@ import { getSavedToken } from 'utils/getSavedToken';
 
 type TInit = {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-    dataRaw?: object;
+    dataRaw?: object | FormData;
     params?: [string, number][] | number;
     headers?: Record<string, string>;
 };
@@ -73,9 +73,17 @@ export const request = async <T = undefined>(
     }
 
     const url: string = getApi(api) + urlParams;
-    const body = typeof dataRaw === 'object' ? { body: JSON.stringify(dataRaw) } : {};
+    const body =
+        dataRaw instanceof FormData
+            ? { body: dataRaw }
+            : typeof dataRaw === 'object'
+            ? { body: JSON.stringify(dataRaw) }
+            : {};
+
     const contentHeader: HeadersInit =
-        typeof dataRaw === 'object' ? { 'Content-type': 'application/json;charset=utf-8' } : {};
+        typeof dataRaw === 'object' && !(dataRaw instanceof FormData)
+            ? { 'Content-type': 'application/json;charset=utf-8' }
+            : {};
 
     const requestInit: RequestInit = {
         method,

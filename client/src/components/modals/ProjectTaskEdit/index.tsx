@@ -52,14 +52,9 @@ export const ProjectTaskEditForm: FC<ProjectTaskProps> = (props) => {
 
         const initTagIds: number[] = initData.tags.map((tag) => tag.tagId);
 
-        const newTagIds: number[] = diffArrays(
-            formTags.map((t) => t.tagId),
-            initTagIds
-        );
-        const deleteTagIds: number[] = diffArrays(
-            initTagIds,
-            formTags.map((t) => t.tagId)
-        );
+        const formTagIds = formTags.map((t) => t.tagId);
+        const newTagIds: number[] = diffArrays([formTagIds], [initTagIds]);
+        const deleteTagIds: number[] = diffArrays([initTagIds], [formTagIds]);
 
         if (newTagIds.length) data.newTagIds = newTagIds;
         if (deleteTagIds.length) data.deleteTagIds = deleteTagIds;

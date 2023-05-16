@@ -1,6 +1,5 @@
 import React, { FC, ReactNode, useContext, useState } from 'react';
 import { TAuthState } from 'types/context/auth.context';
-import { TServerResponse } from 'types/rest/responses/serverResponse';
 import { TLogin } from 'types/rest/responses/auth';
 import { TFuncResponse } from 'types/rest';
 import { TUserJson, TUserLogIn } from 'types/rest/requests/user';
@@ -39,8 +38,7 @@ export const AuthProvider: FC<AuthProviderProps> = (props) => {
             );
 
             const { userId, role, refreshToken, accessToken } = authData || {};
-            if (!userId || !role || !refreshToken || !accessToken)
-                return { message: 'Error logging in!', type: 'error' };
+            if (!userId || !role || !refreshToken || !accessToken) return { message, type: 'error' };
 
             localStorage.setItem('access-token', accessToken);
             localStorage.setItem('refresh-token', refreshToken);

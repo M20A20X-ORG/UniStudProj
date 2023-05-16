@@ -15,6 +15,7 @@ export const API_URL = {
     registerUser: 'users/register',
     getUsers: 'users/get',
     editUser: 'users/edit',
+    deleteUser: 'users/delete',
     createProject: 'projects/create',
     getProject: 'projects/get',
     editProject: 'projects/edit',

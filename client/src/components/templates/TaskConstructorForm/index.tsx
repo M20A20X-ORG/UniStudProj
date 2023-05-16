@@ -9,8 +9,9 @@ import { ModalContext } from 'context/Modal.context';
 import { request } from 'utils/request';
 import { formToObj } from 'utils/formToObj';
 
-import { Select } from 'components/atoms/Select/Select';
-import { Index } from 'components/atoms/SelectMultiple';
+import { SelectMultiple } from 'components/atoms/SelectMultiple';
+import { Select } from 'components/atoms/Select';
+import { diffArrays, TGetPropCallback } from 'utils/diffArrays';
 
 type TParticipantOption = Pick<TUser, 'userId' | 'username'>;
 export type TTaskFormData = Omit<TProjectTask, 'projectId' | 'taskId'>;
@@ -23,6 +24,8 @@ export type TTaskFormDataRaw = Omit<TTaskFormData, 'assignUser' | 'status' | 'ta
 const TAGS_SELECT_NAME = 'tags';
 const NO_STATUS_OPTION: TTaskStatus = { statusId: 0, status: 'No status' };
 const NO_ASSIGNED_OPTION: TParticipantOption = { userId: 0, username: 'Not assigned' };
+
+const getTagId: TGetPropCallback<TTag, number> = (tag) => tag.tagId;
 
 interface ProjectConstructorFormProps {
     handleFormSubmit: (formData: TTaskFormData) => Promise<void>;
@@ -74,7 +77,8 @@ export const TaskConstructorForm: FC<ProjectConstructorFormProps> = (props) => {
             'tag'
         );
         if (type === 'error' || !tags) return modalContext?.openMessageModal(message, type);
-        const tagsNotSelected = tags.filter((t) => !selectedTagsState.find((st) => t.tagId === st.tagId));
+
+        const tagsNotSelected = diffArrays([tags, getTagId], [selectedTagsState, getTagId]);
         setTagsState(tagsNotSelected);
     };
 
@@ -116,37 +120,35 @@ export const TaskConstructorForm: FC<ProjectConstructorFormProps> = (props) => {
                         placeholder={'Description:'}
                         defaultValue={initData?.description || undefined}
                     />
-                    <Select
+                    <Select<TTaskStatus>
                         name={'statusId'}
                         defaultValue={initData?.status?.statusId || NO_STATUS_OPTION.statusId}
                         onClick={handleStatusSelectClick}
                         data={{
                             options: statusesState,
-                            getId: (option) => (option as TTaskStatus).statusId,
-                            getText: (option) => (option as TTaskStatus).status
+                            getId: (option) => option.statusId,
+                            getText: (option) => option.status
                         }}
                     />
-                    <Select
+                    <Select<TParticipantOption>
                         name={'assignUserId'}
                         defaultValue={initData?.assignUser?.userId || NO_ASSIGNED_OPTION.userId}
                         data={{
                             options: projectData.participants,
-                            getId: (option) => (option as TParticipantOption).userId,
-                            getText: (option) => (option as TParticipantOption).username
+                            getId: (option) => option.userId,
+                            getText: (option) => option.username
                         }}
                     />
-                    <Index
+                    <SelectMultiple<TTag>
                         name={TAGS_SELECT_NAME}
                         defaultValue={['']}
+                        data={{
+                            getId: getTagId,
+                            getText: (tag: TTag) => tag.tag
+                        }}
                         state={{
                             optionsState: [tagsState, setTagsState],
                             selectedState: [selectedTagsState, setSelectedTagsState]
-                        }}
-                        data={{
-                            getId: (option) => (option as TTag).tagId,
-                            getText: (option) => (option as TTag).tag,
-                            requireFilterCallback: (id) => (option) => (option as TTag).tagId !== id,
-                            requireFindCallback: (id) => (option) => (option as TTag).tagId === id
                         }}
                     />
                 </fieldset>
