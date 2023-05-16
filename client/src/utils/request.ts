@@ -11,7 +11,7 @@ import { getSavedToken } from 'utils/getSavedToken';
 type TInit = {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE';
     dataRaw?: object | FormData;
-    params?: [string, number][] | number;
+    params?: [string, string | number | boolean][] | number;
     headers?: Record<string, string>;
 };
 

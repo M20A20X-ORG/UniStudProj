@@ -1,5 +1,5 @@
 {
-  "src/**/*.tsx": [
+  "src/**/*.ts(x)?": [
     "yarn format",
     "yarn lint:fix",
     "git add -u"
