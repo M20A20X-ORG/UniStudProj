@@ -1,0 +1,5 @@
+@use "styles/global.scss" as g;
+
+.metricsCard {
+  @extend %v-c-h-sb;
+}

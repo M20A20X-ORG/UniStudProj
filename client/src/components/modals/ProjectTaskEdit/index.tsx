@@ -12,6 +12,7 @@ import { request } from 'utils/request';
 import { TaskConstructorForm, TTaskFormData } from 'components/templates/TaskConstructorForm';
 
 import s from './projectTaskEdit.module.scss';
+import { trackMetrics } from 'utils/trackMetrics';
 
 type TDiffCommon = Omit<TTaskFormData, 'assignUser' | 'status' | 'tags'>;
 
@@ -73,7 +74,10 @@ export const ProjectTaskEditForm: FC<ProjectTaskProps> = (props) => {
             dataRaw: data
         });
         modalContext?.openMessageModal(message, type);
-        if (type === 'info') modalContext?.closeModal('custom');
+        if (type === 'info') {
+            modalContext?.closeModal('custom');
+            if (data.task.statusId === 3) await trackMetrics('METRICS_TASK_COMPLETION');
+        }
         toggleEditSubmit(!editSubmitToggle);
     };
 

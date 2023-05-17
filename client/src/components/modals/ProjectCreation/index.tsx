@@ -1,8 +1,7 @@
 import React, { FC, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TServerResponse } from 'types/rest/responses/serverResponse';
 import { TFuncResponse } from 'types/rest';
-import { TProjectCreation, TProjectEdit, TProjectJson, TProjectParticipantId } from 'types/rest/requests/project';
+import { TProjectCreation, TProjectJson, TProjectParticipantId } from 'types/rest/requests/project';
 import { EProjectAccessRole, TProjectId } from 'types/rest/responses/project';
 
 import { ContextError } from 'exceptions/ContextError';
@@ -11,12 +10,11 @@ import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
 import cn from 'classnames';
-import { getApi } from 'utils/getApi';
-import { getSavedToken } from 'utils/getSavedToken';
 
 import { ProjectConstructorForm, TProjectFormData } from 'components/templates/ProjectConstructorForm';
 
 import { request } from 'utils/request';
+import { trackMetrics } from 'utils/trackMetrics';
 import s from './ProjectCreation.module.scss';
 
 export const ProjectCreationForm: FC = () => {
@@ -51,7 +49,10 @@ export const ProjectCreationForm: FC = () => {
     const handleFormSubmit = async (formData: TProjectFormData) => {
         const { message, type, payload } = await requestProjectCreation(formData);
         modalContext?.openMessageModal(message, type);
-        if (type === 'info') modalContext?.closeModal('custom');
+        if (type === 'info') {
+            modalContext?.closeModal('custom');
+            await trackMetrics('METRICS_PROJECT_CREATION');
+        }
         if (payload?.projectId) navigate({ pathname: 'projects/' + payload.projectId });
     };
 
