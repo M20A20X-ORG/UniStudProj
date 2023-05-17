@@ -1,4 +1,4 @@
-import React, { FC, useContext, useEffect, useState } from "react";
+import React, { FC, useContext, useEffect, useState } from 'react';
 import { TLayoutCommon, TLinks, TNavLink } from 'types/layout';
 
 import { Link, Outlet } from 'react-router-dom';
@@ -7,6 +7,7 @@ import cn from 'classnames';
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
+import { trackMetrics } from 'utils/trackMetrics';
 import { Navigation } from './Navigation';
 import s from './Layout.module.scss';
 
@@ -41,6 +42,10 @@ export const Layout: FC<LayoutProps> = (props) => {
             <span className={s.btnMenuLines}></span>
         </button>
     );
+
+    useEffect(() => {
+        trackMetrics('METRICS_GUEST');
+    }, []);
 
     return (
         <>

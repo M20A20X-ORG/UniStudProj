@@ -30,5 +30,6 @@ export const API_URL = {
     getNews: 'news/get',
     editNews: 'news/edit',
     deleteNews: 'news/delete',
+    getMetrics: 'metrics/get',
     uploadResource: 'resources/create'
 };
