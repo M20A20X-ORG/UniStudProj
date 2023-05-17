@@ -6,6 +6,7 @@ import { tagSchema } from './tag';
 import { projectSchema } from './project';
 import { projectTaskSchema } from './projectTask';
 import { projectTaskStatusSchema } from './projectTaskStatus';
+import { newsSchema } from './news';
 
 export const SCHEMAS: TSchema = {
     userLoginSchema,
@@ -13,5 +14,6 @@ export const SCHEMAS: TSchema = {
     tagSchema,
     projectSchema,
     projectTaskSchema,
-    projectTaskStatusSchema
+    projectTaskStatusSchema,
+    newsSchema
 };
