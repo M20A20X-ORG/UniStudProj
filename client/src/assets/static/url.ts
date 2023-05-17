@@ -26,5 +26,9 @@ export const API_URL = {
     deleteProjectTask: 'projects/tasks/delete',
     getProjectTasksStatuses: 'projects/tasks/get/statuses',
     getProjectTasksTags: 'projects/tasks/get/tags',
+    createNews: 'news/create',
+    getNews: 'news/get',
+    editNews: 'news/edit',
+    deleteNews: 'news/delete',
     uploadResource: 'resources/create'
 };

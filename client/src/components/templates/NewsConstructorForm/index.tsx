@@ -2,7 +2,7 @@ import React, { FC, MouseEvent, useRef } from 'react';
 import { formToObj } from 'utils/formToObj';
 import { TNewsCreation } from 'types/rest/requests/news';
 
-export type TNewsFormData = TNewsCreation;
+export type TNewsFormData = Omit<TNewsCreation, 'authorId'>;
 
 interface NewsConstructorFormProps {
     handleFormSubmit: (formData: TNewsFormData) => Promise<void>;

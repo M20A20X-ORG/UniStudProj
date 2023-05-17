@@ -7,6 +7,7 @@ import { LAYOUT_COMMON, LINKS, NAV_LINKS } from 'assets/static/layout';
 import { ProfilePage } from 'components/pages/Profile';
 import { ProjectsPage } from 'components/pages/Projects';
 import { ProjectPage } from 'components/pages/Project';
+import { NewsPage } from 'components/pages/News';
 
 import { Layout } from 'components/Layout';
 
@@ -23,7 +24,9 @@ export const RouterProvider = () =>
           <Route path={":id"} element={<ProjectPage />} />
         </Route>
         <Route path={PAGE_URL.tests} element={<>tests</>} />
-        <Route path={PAGE_URL.news} element={<>news</>} />
+        <Route path={PAGE_URL.news} >
+          <Route index element={<NewsPage />} />
+        </Route>
         <Route path={PAGE_URL.metrics} element={<>metrics</>} />
       </Route>
     </Routes>

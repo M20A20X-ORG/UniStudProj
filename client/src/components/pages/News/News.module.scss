@@ -1,7 +1,7 @@
 @use "styles/global.scss" as g;
 
 .newsCardCommon {
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: auto 1fr;
   grid-auto-flow: row;
 }
 
@@ -20,8 +20,10 @@
     border: none;
     outline: none;
   }
+}
 
-  &Btn {
-    font-size: 1em;
-  }
+.btnEdit {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
 }
