@@ -26,9 +26,8 @@ export const AUTH_SQL = {
     loginSql: {
         selectUserData: `
         SELECT u.user_id  AS userId,
-               u.password AS passwordHash,
-               ur.name    AS role,
-               u.*
+               u.password AS password,
+               ur.name    AS role
         FROM (SELECT *
               FROM tbl_users
               WHERE username = ?) AS u

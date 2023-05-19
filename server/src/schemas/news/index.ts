@@ -11,7 +11,5 @@ export const NEWS_SCHEMA: TSchema = {
 };
 
 export const NEWS_QUERY = {
-    newsIds: check('newsIds', "'newsIds' must be an array of numbers >= 1")
-        .isArray()
-        .custom((newsIds: any[]) => newsIds.every((elem) => !isNaN(elem) && elem >= 1))
+    newsId: check('newsId', "'newsId' must be a number >= 1").isInt({ min: 1 })
 };

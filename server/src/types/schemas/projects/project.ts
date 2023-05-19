@@ -12,11 +12,11 @@ export type TTag = {
 export type TProject = {
     projectId: number;
     name: string;
-    description?: string;
+    description: string;
     participantsAmount: number;
     tagsAmount: number;
-    dateStart: string;
-    dateEnd: string;
+    dateStart: string | null;
+    dateEnd: string | null;
     tags: TTag[];
     participants: TProjectParticipant[];
 };
@@ -26,10 +26,10 @@ export type TProjectJson<T> = { project: T };
 export type TProjectId = Pick<TProject, 'projectId'>;
 export type TProjectParticipantId = Pick<TProjectParticipant, 'userId' | 'projectRoleId'>;
 export type TProjectCreation = Pick<TProject, 'name' | 'description' | 'dateStart' | 'dateEnd'> & {
-    tagIds: Array<number>;
-    participantIds: Array<TProjectParticipantId>;
+    newTagIds: Array<number>;
+    newParticipantIds: Array<TProjectParticipantId>;
 };
-export type TProjectEdit = Pick<TProject, 'projectId'> &
+export type TProjectEdit = TProjectId &
     Partial<
         TProjectCreation & {
             deleteParticipantIds: Array<number>;

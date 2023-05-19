@@ -1,14 +1,6 @@
-import { TReadQueryResponse, TModifyQueryResponse } from '@type/sql';
-import { TPayloadResponse, TResponse } from '@type/schemas/response';
-import {
-    TMetrics,
-    TMetricsCommon,
-    TMetricsSchemas,
-    TMetricsUpdateAction
-} from '@type/schemas/metrics';
-
-import { NoDataError } from '@exceptions/NoDataError';
-import { DataModificationError } from '@exceptions/DataModificationError';
+import { TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
+import { TResponse } from '@type/schemas/response';
+import { TMetrics, TMetricsUpdateAction } from '@type/schemas/metrics';
 
 import { METRICS_SQL } from '@static/sql/metrics';
 
@@ -18,68 +10,44 @@ import { log } from '@configs/loggerConfig';
 const { readSql, updateSql } = METRICS_SQL;
 
 interface MetricsService {
-    getMetrics: (needDaily: boolean) => Promise<TPayloadResponse<TMetrics | TMetricsCommon>>;
+    getMetrics: () => Promise<TResponse<TMetrics>>;
     updateMetrics: (updateAction: TMetricsUpdateAction) => Promise<TResponse>;
 }
 
 class MetricsServiceImpl implements MetricsService {
-    public getMetrics = async (
-        isNeedDaily: boolean
-    ): Promise<TPayloadResponse<TMetrics | TMetricsCommon>> => {
+    public getMetrics = async (): Promise<TResponse<TMetrics>> => {
         const {
             selectMetrics,
             selectUsersAmount,
             selectProjectsAmount,
-            selectTestsCompletedAmount,
             selectTasksCompletedAmount
         } = readSql;
 
         const dbMetricsResponse: TReadQueryResponse = await sqlPool.query(selectMetrics);
         const [[dbMetrics]] = dbMetricsResponse;
-        if (!dbMetrics) throw new NoDataError(`Metrics are not found!`);
+        if (!dbMetrics) return { message: `Metrics are not found!` };
         const metrics = dbMetrics as TMetrics;
-
-        if (isNeedDaily) {
-            return {
-                message: `Successfully got metrics`,
-                payload: metrics
-            };
-        }
 
         const dbUsersAmountResponse: TReadQueryResponse = await sqlPool.query(selectUsersAmount);
         const [[dbUsersAmount]] = dbUsersAmountResponse;
-        if (!dbUsersAmount) throw new NoDataError(`Error getting users metrics!`);
-        const { allUsers } = dbUsersAmount as Pick<TMetricsSchemas, 'allUsers'>;
+        if (!dbUsersAmount) return { message: `User metrics are not found!` };
+        const { allUsers } = dbUsersAmount as Pick<TMetrics, 'allUsers'>;
         metrics.allUsers = allUsers;
 
         const dbProjectsAmountResponse: TReadQueryResponse = await sqlPool.query(
             selectProjectsAmount
         );
         const [[dbProjectsAmount]] = dbProjectsAmountResponse;
-        if (!dbProjectsAmount) throw new NoDataError(`Error getting projects metrics!`);
-        const { allProjects } = dbProjectsAmount as Pick<TMetricsSchemas, 'allProjects'>;
+        if (!dbProjectsAmount) return { message: `Project metrics are not found!` };
+        const { allProjects } = dbProjectsAmount as Pick<TMetrics, 'allProjects'>;
         metrics.allProjects = allProjects;
-
-        const dbTestsCompletedAmountResponse: TReadQueryResponse = await sqlPool.query(
-            selectTestsCompletedAmount
-        );
-        const [[dbTestsCompletedAmount]] = dbTestsCompletedAmountResponse;
-        if (!dbTestsCompletedAmount) throw new NoDataError(`Error getting tests metrics!`);
-        const { allTestsCompleted } = dbTestsCompletedAmount as Pick<
-            TMetricsSchemas,
-            'allTestsCompleted'
-        >;
-        metrics.allTestsCompleted = allTestsCompleted;
 
         const dbTasksCompletedAmountResponse: TReadQueryResponse = await sqlPool.query(
             selectTasksCompletedAmount
         );
         const [[dbTasksCompletedAmount]] = dbTasksCompletedAmountResponse;
-        if (!dbTasksCompletedAmount) throw new NoDataError(`Error getting tasks metrics!`);
-        const { allTasksCompleted } = dbTasksCompletedAmount as Pick<
-            TMetricsSchemas,
-            'allTasksCompleted'
-        >;
+        if (!dbProjectsAmount) return { message: `Task metrics are not found!` };
+        const { allTasksCompleted } = dbTasksCompletedAmount as Pick<TMetrics, 'allTasksCompleted'>;
         metrics.allTasksCompleted = allTasksCompleted;
 
         return {
@@ -91,11 +59,10 @@ class MetricsServiceImpl implements MetricsService {
     public updateMetrics = async (updateAction: TMetricsUpdateAction): Promise<TResponse> => {
         const { getUpdateDailyMetrics } = updateSql;
 
-        const { payload: metrics } = await this.getMetrics(true);
+        const { payload: metrics } = await this.getMetrics();
 
-        const insertMetricsSql = getUpdateDailyMetrics(metrics as TMetricsCommon, updateAction);
-        if (!insertMetricsSql)
-            throw new DataModificationError(`Incorrect updateAction: '${updateAction}'`);
+        const insertMetricsSql = getUpdateDailyMetrics(metrics as TMetrics, updateAction);
+        if (!insertMetricsSql) return { message: `Incorrect updateAction: '${updateAction}'` };
 
         const dbMetricsUpdateResponse: TModifyQueryResponse = await sqlPool.query(insertMetricsSql);
         log.debug(dbMetricsUpdateResponse);

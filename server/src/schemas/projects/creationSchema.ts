@@ -1,9 +1,12 @@
 import { JSONSchemaType } from 'ajv';
 import { TProjectCreation, TProjectJson } from '@type/schemas/projects/project';
 
-type TCreationSchema = JSONSchemaType<TProjectJson<TProjectCreation>>;
+type TCreationSchema = Omit<TProjectCreation, 'dateStart' | 'dateEnd'> & {
+    dateStart?: string;
+    dateEnd?: string;
+};
 
-export const creationSchema: TCreationSchema = {
+export const creationSchema: JSONSchemaType<TProjectJson<TCreationSchema>> = {
     $id: 'http://example.com/schemas/project/create',
     type: 'object',
     properties: {
@@ -11,16 +14,16 @@ export const creationSchema: TCreationSchema = {
             type: 'object',
             properties: {
                 name: { type: 'string', format: 'projectName' },
-                description: { type: 'string', nullable: true },
-                dateStart: { type: 'string' },
-                dateEnd: { type: 'string' },
-                tagIds: {
+                description: { type: 'string' },
+                dateStart: { type: 'string', nullable: true },
+                dateEnd: { type: 'string', nullable: true },
+                newTagIds: {
                     type: 'array',
                     items: { type: 'integer', minimum: 1 } as any,
                     minItems: 0,
                     maxItems: 50
                 },
-                participantIds: {
+                newParticipantIds: {
                     type: 'array',
                     items: { $ref: '/schemas/project/participantIds' } as any,
                     minItems: 0,
@@ -28,7 +31,7 @@ export const creationSchema: TCreationSchema = {
                 }
             },
             additionalProperties: false,
-            required: ['name', 'dateStart', 'dateEnd', 'tagIds']
+            required: ['name', 'description', 'newTagIds']
         }
     },
     additionalProperties: false,

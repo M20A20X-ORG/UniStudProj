@@ -11,8 +11,8 @@ export const loginSchema: TLoginSchema = {
         user: {
             type: 'object',
             properties: {
-                username: { type: 'string', pattern: 'userUsername' },
-                password: { type: 'string', pattern: 'userPassword' }
+                username: { type: 'string', format: 'userUsername' },
+                password: { type: 'string', format: 'userPassword' }
             },
             required: ['username', 'password'],
             additionalProperties: false

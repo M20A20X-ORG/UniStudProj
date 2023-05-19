@@ -20,21 +20,23 @@ export const TASK_SQL = {
             WHERE task_id = ?`
     },
     readSql: {
+        selectStatuses: `SELECT status_id as statusId, name as status from tbl_task_statuses`,
+        selectTags: `SELECT tag_id as tagId, name as tag from tbl_task_tags`,
         selectTasks: `
             SELECT pt.task_id    AS taskId,
                    pt.project_id AS projectId,
                    pt.name,
                    pt.description,
-                   ts.status_id  AS tempStatusId,
-                   ts.name       AS tempStatus,
-                   u.user_id     AS tempUserId,
-                   u.name        AS tempUsername
+                   ts.status_id  AS statusId,
+                   ts.name       AS status,
+                   u.user_id     AS userId,
+                   u.username    AS username
             FROM (SELECT task_id, project_id, name, description, status_id, assign_user_id
                   FROM tbl_project_tasks
                   WHERE project_id = ?) AS pt
-                     JOIN tbl_users u ON u.user_id = pt.assign_user_id
-                     JOIN tbl_task_statuses ts ON ts.status_id = pt.status_id`,
-        selectTags: `
+                     LEFT JOIN tbl_users u ON u.user_id = pt.assign_user_id
+                     LEFT JOIN tbl_task_statuses ts ON ts.status_id = pt.status_id`,
+        selectTagsOfProjects: `
             SELECT pt.task_id AS taskId,
                    ttg.tag_id AS tagId,
                    ttg.name   AS tag
@@ -50,7 +52,7 @@ export const TASK_SQL = {
             INSERT INTO tbl_project_tasks(name, project_id, description, status_id, assign_user_id)
             VALUES (?, ?, ?, ?, ?)`,
         getInsertTagsSql: (taskId: number, tagIds: number[]): string => {
-            const values = tagIds.map((tagId) => `${[taskId, tagId]}`);
+            const values = tagIds.map((tagId) => `(${[taskId, tagId]})`);
             return `
                 INSERT INTO tbl_tags_of_tasks (task_id, tag_id)
                 VALUES ${values}`;
@@ -90,7 +92,7 @@ export const TASK_SQL = {
                   DELETE
                   FROM tbl_tags_of_tasks
                   WHERE task_id = ${taskId}
-                    AND tag_id IN (${deleteTagIds.toString()})`;
+                    AND tag_id IN (${deleteTagIds})`;
 
             return [insertSql, deleteSql];
         }

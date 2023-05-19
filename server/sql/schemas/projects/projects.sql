@@ -7,7 +7,7 @@ CREATE TABLE `tbl_projects`
     `name`                VARCHAR(30)  NOT NULL,
     `participants_amount` INT          NOT NULL,
     `tags_amount`         INT          NOT NULL,
-    `description`         VARCHAR(200) NULL,
+    `description`         VARCHAR(200) NOT NULL,
     `date_start`          DATE         NULL,
     `date_end`            DATE         NULL,
     CONSTRAINT `projects_PK_project_id` PRIMARY KEY (`project_id`),

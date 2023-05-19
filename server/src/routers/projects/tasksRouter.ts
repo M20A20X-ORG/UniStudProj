@@ -17,6 +17,16 @@ const { projectId } = PROJECT_QUERY;
 const { taskId } = TASK_QUERY;
 
 router.get(
+    '/get/statuses',
+    requireAuth([user, admin], [manager, developer, owner, mentor]),
+    tasksController.getGetTaskStatuses
+);
+router.get(
+    '/get/tags',
+    requireAuth([user, admin], [manager, developer, owner, mentor]),
+    tasksController.getGetTaskTags
+);
+router.get(
     '/get',
     ...requireQueryValidator(projectId),
     requireAuth([user, admin], [manager, developer, owner, mentor]),
@@ -25,19 +35,19 @@ router.get(
 router.post(
     '/create',
     requireSchemaValidator('http://example.com/schemas/project/task/create'),
-    requireAuth([user, admin], [manager, developer]),
+    requireAuth([user, admin], [owner, manager, developer]),
     tasksController.postCreateTask
 );
 router.put(
     '/edit',
     requireSchemaValidator('http://example.com/schemas/project/task/edit'),
-    requireAuth([user, admin], [manager, developer]),
+    requireAuth([user, admin], [owner, manager, developer]),
     tasksController.putEditTask
 );
 router.delete(
     '/delete',
     ...requireQueryValidator(projectId, taskId),
-    requireAuth([user, admin], [manager, developer]),
+    requireAuth([user, admin], [owner, manager, developer]),
     tasksController.deleteDeleteTask
 );
 

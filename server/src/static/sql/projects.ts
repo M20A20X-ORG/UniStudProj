@@ -27,17 +27,23 @@ export const PROJECT_SQL = {
         WHERE project_id = ?`
     },
     readSql: {
-        getSelectProjects: (projectIds: number[]) => `
-        SELECT project_id          AS projectId,
-               date_start          AS dateStart,
-               date_end            AS dateEnd,
-               participants_amount AS participantsAmount,
-               tags_amount         AS tagsAmount,
-               name,
-               description
-        FROM tbl_projects
-        WHERE project_id IN (${projectIds})`,
-        getSelectTags: (projectIds: number[]) => `
+        getSelectProjects: (projectIds: number[], limit: number) => {
+            const clause = limit ? ' LIMIT ' + limit : ` WHERE project_id IN (${projectIds})`;
+            return `
+          SELECT project_id                          AS projectId,
+                 DATE_FORMAT(date_start, '%Y-%m-%d') AS dateStart,
+                 DATE_FORMAT(date_end, '%Y-%m-%d')   AS dateEnd,
+                 participants_amount                 AS participantsAmount,
+                 tags_amount                         AS tagsAmount,
+                 name,
+                 description
+          FROM tbl_projects ${clause}`;
+        },
+        getSelectTags: (limit: number) => `
+        SELECT tag_id AS tagId, name AS tag
+        FROM tbl_project_tags
+        LIMIT ${limit}`,
+        getSelectTagsOfProjects: (projectIds: number[]) => `
         SELECT tp.project_id AS projectId, pt.tag_id AS tagId, pt.name AS tag
         FROM (SELECT project_id, tag_id
               FROM tbl_tags_of_projects
@@ -47,8 +53,8 @@ export const PROJECT_SQL = {
         SELECT up.project_id AS projectId,
                u.user_id     AS userId,
                u.username,
-               pr.name       AS name,
-               pr.role_id    AS roleId
+               pr.name       AS projectRole,
+               pr.role_id    AS projectRoleId
         FROM (SELECT project_id, user_id, project_role_id
               FROM tbl_users_of_projects
               WHERE project_id IN (${projectIds})) AS up
@@ -59,7 +65,7 @@ export const PROJECT_SQL = {
         insertProject: `
         INSERT INTO tbl_projects(name, participants_amount, tags_amount, description, date_start,
                                  date_end)
-        VALUES (?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, DATE_FORMAT(?, '%Y-%m-%d'), DATE_FORMAT(?, '%Y-%m-%d'))`,
         getInsertUsersSql: (projectId: number, participantIds: TProjectParticipantId[]): string => {
             const values = participantIds.map((p) => `(${[projectId, p.userId, p.projectRoleId]})`);
             return `
@@ -77,10 +83,11 @@ export const PROJECT_SQL = {
         getUpdateProjectSql: (projectData: TProjectPublic): string => {
             const { projectId, dateEnd, dateStart, name, description } = projectData;
             const values = concat([
-                dateEnd ? "date_end = '" + dateEnd.trim() + "'" : '',
-                dateStart ? "date_start = '" + dateStart.trim() + "'" : '',
                 description !== undefined ? "description = '" + description.trim() + "'" : '',
-                name ? "name = '" + name.trim() + "'" : ''
+                name ? "name = '" + name.trim() + "'" : '',
+                'date_end = ' + (dateEnd ? 'DATE_FORMAT(' + dateEnd.trim() + ",'%Y-%m-%d')" : null),
+                'date_start = '
+                    + (dateStart ? 'DATE_FORMAT(' + dateStart.trim() + ",'%Y-%m-%d')" : null)
             ]);
             return (
                 values
@@ -101,28 +108,30 @@ export const PROJECT_SQL = {
                                        FROM tbl_users_of_projects AS up
                                        WHERE up.project_id = ${projectId})
           WHERE p.project_id = ${projectId}`;
-            const insertSql = participantIds && [
-                PROJECT_SQL.createSql.getInsertUsersSql(projectId, participantIds)
-            ];
-            const deleteSql
-                = deleteParticipantIds
-                && `
+            const insertSql = !participantIds?.length
+                ? undefined
+                : [PROJECT_SQL.createSql.getInsertUsersSql(projectId, participantIds)];
+            const deleteSql = !deleteParticipantIds?.length
+                ? undefined
+                : `
                   DELETE
                   FROM tbl_users_of_projects
                   WHERE project_id = ${projectId}
-                    AND user_id IN (${deleteParticipantIds}`;
+                    AND user_id IN (${deleteParticipantIds})`;
 
             return [insertSql, deleteSql, updateAmount];
         },
         getUpdateTagsSql: (
             projectId: number,
-            tagIds?: number[],
-            deleteTagIds?: number[]
+            newTagIds: number[] | undefined,
+            deleteTagIds: number[] | undefined
         ): TUpdateDependentSql => {
-            const insertSql = tagIds && [PROJECT_SQL.createSql.getInsertTagsSql(projectId, tagIds)];
-            const deleteSql
-                = deleteTagIds
-                && `
+            const insertSql = !newTagIds?.length
+                ? undefined
+                : [PROJECT_SQL.createSql.getInsertTagsSql(projectId, newTagIds)];
+            const deleteSql = !deleteTagIds?.length
+                ? undefined
+                : `
                   DELETE
                   FROM tbl_tags_of_projects
                   WHERE project_id = ${projectId}

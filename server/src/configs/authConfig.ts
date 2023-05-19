@@ -12,14 +12,16 @@ import {
     VerifyOptions
 } from 'jsonwebtoken';
 import { TAccessRole, TProjectAccessRole, TUserAccessRole } from '@type/auth';
-import { TAuthPayload, TRefreshToken } from '@type/schemas/auth';
+import { TAuthPayload, TRefreshToken, TUserAuthPayload } from '@type/schemas/auth';
+import { TReadQueryResponse } from '@type/sql';
+
 import { AuthorizationError } from '@exceptions/AuthorizationError';
 import { AuthenticationError } from '@exceptions/AuthenticationError';
 
 import { AUTH_SQL } from '@static/sql/auth';
 
 import { sqlPool } from '@configs/sqlPoolConfig';
-import { TReadQueryResponse } from '@type/sql';
+import { getDbDate } from '@utils/date';
 
 interface Auth {
     readonly ACCESS_ROLE: { [key: string]: string };
@@ -47,16 +49,16 @@ class AuthImpl implements Auth {
 
     public createRefreshToken = (): Pick<TRefreshToken, 'token' | 'expireDate'> => {
         const jwtRefreshExpireTime = parseInt(process.env.JWT_REFRESH_EXPIRE_TIME as string);
-        const expireDate: number = new Date(
-            new Date().getTime() + 1000 * jwtRefreshExpireTime
-        ).getTime();
+        const expireDate: string = getDbDate(
+            new Date(new Date().getTime() + 1000 * jwtRefreshExpireTime)
+        );
         return {
             token: v4(),
             expireDate
         };
     };
 
-    public createJwtToken = (payload: TAuthPayload): string => {
+    public createJwtToken = (payload: TUserAuthPayload): string => {
         const secret = env.JWT_SECRET as Secret;
         const signOptions: SignOptions = {
             expiresIn: env.JWT_EXPIRE_TIME as string,

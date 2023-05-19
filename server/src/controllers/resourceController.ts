@@ -1,5 +1,5 @@
 import { RequestHandler } from 'express';
-import { TPayloadResponse } from '@type/schemas/response';
+import { TResponse } from '@type/schemas/response';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 
@@ -12,15 +12,14 @@ interface ResourceController {
 class ResourceControllerImpl implements ResourceController {
     public postCreateResource: RequestHandler = async (req, res) => {
         try {
-            const { files } = req;
-            if (!Array.isArray(files) || !files.length)
-                throw new DataAddingError('File is not provided!');
+            const { file } = req;
+            if (!file) throw new DataAddingError('File is not provided!');
 
             const apiUrl = req.protocol + '://' + req.get('host') + '/';
-            const payload: string[] = files.map((file) => apiUrl + file.filename);
+            const payload: string = apiUrl + file.filename;
 
-            const response: TPayloadResponse<any> = {
-                message: `Successfully created resources, amount: ${files.length}`,
+            const response: TResponse<string> = {
+                message: `Successfully create resource`,
                 payload
             };
             return res.status(201).json(response);

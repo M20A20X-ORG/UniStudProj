@@ -16,7 +16,7 @@ export const editSchema: TEditSchema = {
                 description: { type: 'string', nullable: true },
                 statusId: { type: 'number', nullable: true },
                 assignUserId: { type: 'number', minimum: 1, nullable: true },
-                tagIds: {
+                newTagIds: {
                     type: 'array',
                     items: { type: 'integer', minimum: 1 } as any,
                     minItems: 0,
