@@ -10,7 +10,7 @@
     "start:dev": "concurrently \"yarn tsc:watch\" \"nodemon dist/src/server.js\"",
     "start:debug": "concurrently \"yarn tsc:watch\" \"nodemon --inspect dist/src/server.js\"",
     "start:prod": "SET NODE_ENV=PRODUCTION && yarn dev",
-    "test": "SET NODE_ENV=PRODUCTION && nyc --reporter=text-summary mocha --inspect",
+    "test": "SET NODE_ENV=PRODUCTION && c8 --reporter=text-summary mocha --inspect",
     "test:watch": "concurrently \"yarn tsc:watch\" \"nodemon -x yarn test\"",
     "test:coverage": "c8 --reporter=text-summary mocha --exit",
     "lint": "eslint --cache src/",
