@@ -1,7 +1,5 @@
 import React, { ChangeEvent, FC, JSX, useContext, useEffect, useState } from 'react';
 import { TNews } from 'types/rest/responses/news';
-
-import { ACCESS_ROLE } from 'types/rest/responses/auth';
 import { OPTIONS_LIMIT } from 'assets/static/common';
 
 import { ModalContext } from 'context/Modal.context';
@@ -113,7 +111,12 @@ export const NewsPage: FC = () => {
     return (
         <>
             <div>
-                <h1 className={s.projectsHeader}>News</h1>
+                <h1
+                    className={s.projectsHeader}
+                    role={'header'}
+                >
+                    News
+                </h1>
                 <div className={s.actionsContainer}>
                     {authContext?.role !== 'ROLE_ADMINISTRATOR' ? null : (
                         <select

@@ -103,7 +103,12 @@ export const ProjectsPage: FC = () => {
     return (
         <>
             <div>
-                <h1 className={s.projectsHeader}>Projects</h1>
+                <h1
+                    className={s.projectsHeader}
+                    role={'header'}
+                >
+                    Projects
+                </h1>
                 <div className={s.actionsContainer}>
                     <select
                         className={cn(s.actionsSelect, 'clickable')}

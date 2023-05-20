@@ -4,6 +4,7 @@ import { TMetrics } from 'types/rest/responses/metrics';
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
 
+import { v4 } from 'uuid';
 import { request } from 'utils/request';
 
 import s from './Metrics.module.scss';
@@ -36,10 +37,10 @@ export const MetricsPage: FC = () => {
     /// ----- Render ----- ///
     const renderMetricsCard = (metrics: TMetrics | null) => {
         const liElems: JSX.Element[] = Object.entries(metrics || METRICS_FALLBACK).map(([key, value]) => (
-            <>
+            <li key={v4()}>
                 <span className={'cardKey'}>{key}:</span>
                 <span>{value || '--'}</span>
-            </>
+            </li>
         ));
         return <>{liElems}</>;
     };
@@ -52,7 +53,12 @@ export const MetricsPage: FC = () => {
     return (
         <>
             <div>
-                <h1 className={s.projectsHeader}>Metrics</h1>
+                <h1
+                    className={s.projectsHeader}
+                    role={'header'}
+                >
+                    Metrics
+                </h1>
             </div>
             <section>
                 <ul className={s.metricsCard}>{renderMetricsCard(metricsState)}</ul>

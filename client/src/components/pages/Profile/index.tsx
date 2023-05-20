@@ -152,18 +152,43 @@ export const ProfilePage: FC = () => {
                         />
                     </div>
                     <ul className={'cardCommon'}>
-                        <span className={'cardKey'}>Name:</span>
+                        <span
+                            className={'cardKey'}
+                            role={'name'}
+                        >
+                            Name:
+                        </span>
                         <span>{name ?? '--'}</span>
-                        <span className={'cardKey'}>Group:</span>
+                        <span
+                            className={'cardKey'}
+                            role={'group'}
+                        >
+                            Group:
+                        </span>
                         <span>{group ?? '--'}</span>
-                        <span className={'cardKey'}>Email:</span>
+                        <span
+                            className={'cardKey'}
+                            role={'email'}
+                        >
+                            Email:
+                        </span>
                         <span>{email ?? '--'}</span>
-                        <span className={'cardKey'}>Username:</span>
+                        <span
+                            className={'cardKey'}
+                            role={'username'}
+                        >
+                            Username:
+                        </span>
                         <span>{username ?? '--'}</span>
                     </ul>
                 </div>
                 <div className={s.infoAbout}>
-                    <span className={s.infoAboutKey}>About:</span>
+                    <span
+                        className={s.infoAboutKey}
+                        role={'about'}
+                    >
+                        About:
+                    </span>
                     <span className={s.infoAboutValue}>{about || '--'}</span>
                 </div>
                 {!userState || editState ? null : btnEditElem}

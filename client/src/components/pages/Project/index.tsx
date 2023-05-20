@@ -7,6 +7,7 @@ import { AuthContext } from 'context/Auth.context';
 import cn from 'classnames';
 import { useParams } from 'react-router-dom';
 
+import { v4 } from 'uuid';
 import { request } from 'utils/request';
 
 import { ProjectEditForm } from 'components/modals/ProjectEdit';
@@ -105,10 +106,10 @@ export const ProjectPage: FC = () => {
         const participantsELem = Object.keys(PROJECT_ACCESS_ROLE).map((keyRaw) => {
             const key = keyRaw as unknown as keyof typeof PROJECT_ACCESS_ROLE;
             return (
-                <>
+                <li key={v4()}>
                     <span className={'cardKey'}>{PROJECT_ACCESS_ROLE[key]}s:</span>
                     <ul className={'tagList'}>{participants[key] ?? '--'}</ul>
-                </>
+                </li>
             );
         });
 
@@ -120,15 +121,15 @@ export const ProjectPage: FC = () => {
         const commonLiElems: JSX.Element[] = Object.keys(projectCommon).map((key) => {
             const value = projectCommon[key as keyof typeof projectCommon];
             return (
-                <>
+                <li key={v4()}>
                     <span className={'cardKey'}>{key}:</span>
                     <span>{value ?? '--'}</span>
-                </>
+                </li>
             );
         });
         const tagsLiElems: JSX.Element[] | undefined = tags?.map((t) => (
             <li
-                key={JSON.stringify(t)}
+                key={v4()}
                 className={'tag'}
             >
                 {t.tag}
@@ -142,8 +143,11 @@ export const ProjectPage: FC = () => {
         );
 
         return (
-            <>
-                <div className={'cardHead'}>
+            <li>
+                <div
+                    className={'cardHead'}
+                    role={'id'}
+                >
                     <span>Project ID: {projectId ?? '--'}</span>
                 </div>
                 <div className={s.projectCardCommon}>
@@ -159,7 +163,7 @@ export const ProjectPage: FC = () => {
                     <span className={s.descriptionCardKey}>Description:</span>
                     <span className={s.descriptionCardValue}>{description || '--'}</span>
                 </div>
-            </>
+            </li>
         );
     };
 

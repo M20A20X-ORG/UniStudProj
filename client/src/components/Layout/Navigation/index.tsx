@@ -3,6 +3,7 @@ import { TLinks, TNavLink } from 'types/layout';
 
 import { NavLink } from 'react-router-dom';
 import cn from 'classnames';
+import { v4 } from 'uuid';
 
 import { ModalContext } from 'context/Modal.context';
 import { AuthContext } from 'context/Auth.context';
@@ -37,7 +38,7 @@ export const Navigation: FC<NavProps> = (props) => {
     const getNavLinkElems = () => {
         const { href, loggedName, name } = profileLink;
         const profileLinkElem = (
-            <li key={JSON.stringify(profileLink)}>
+            <li key={v4()}>
                 <LinkElem
                     href={href}
                     clickHandler={(event) => {

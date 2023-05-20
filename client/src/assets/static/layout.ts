@@ -40,10 +40,6 @@ export const NAV_LINKS: TNavLink[] = [
         name: 'Projects'
     },
     {
-        href: PAGE_URL.tests,
-        name: 'Tests'
-    },
-    {
         href: PAGE_URL.news,
         name: 'News'
     },
