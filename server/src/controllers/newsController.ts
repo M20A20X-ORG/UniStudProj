@@ -20,7 +20,7 @@ interface NewsController {
 class NewsControllerImpl implements NewsController {
     public postCreateNews: RequestHandler = async (req, res) => {
         try {
-            const { news } = req.body as TNewsJson<TNewsCreation[]>;
+            const { news } = req.body as TNewsJson<TNewsCreation>;
             const serviceResponse = await newsService.createNews(news);
             return res.status(201).json(serviceResponse);
         } catch (error: unknown) {
@@ -33,13 +33,7 @@ class NewsControllerImpl implements NewsController {
 
     public getGetNews: RequestHandler = async (req, res) => {
         try {
-            const newsIdsParam = req.query.newsIds as string[];
-            const needCommonData = (req.query.needCommonData as string) === 'true';
-
-            const limit = parseInt(req.query.limit as string);
-            const newsIds = newsIdsParam.map((id) => parseInt(id));
-
-            const serviceResponse = await newsService.getNews(newsIds, needCommonData, limit);
+            const serviceResponse = await newsService.getNews();
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
@@ -51,7 +45,7 @@ class NewsControllerImpl implements NewsController {
 
     public putEditNews: RequestHandler = async (req, res) => {
         try {
-            const { news } = req.body as TNewsJson<TNewsEdit[]>;
+            const { news } = req.body as TNewsJson<TNewsEdit>;
             const serviceResponse = await newsService.editNews(news);
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
@@ -65,10 +59,8 @@ class NewsControllerImpl implements NewsController {
 
     public deleteNews: RequestHandler = async (req, res) => {
         try {
-            const newsIdsParam = req.query.newsIds as string[];
-            const newsIds = newsIdsParam.map((idStr) => parseInt(idStr));
-
-            const serviceResponse = await newsService.deleteNews(newsIds);
+            const newsId = parseInt(req.query.newsId as string);
+            const serviceResponse = await newsService.deleteNews(newsId);
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;

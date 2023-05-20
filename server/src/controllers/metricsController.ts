@@ -29,7 +29,7 @@ class MetricsControllerImpl implements MetricsController {
 
     public getGetMetrics: RequestHandler = async (req, res) => {
         try {
-            const serviceResponse = await metricsService.getMetrics(false);
+            const serviceResponse = await metricsService.getMetrics();
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;

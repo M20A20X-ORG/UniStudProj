@@ -1,5 +1,4 @@
 import { ACCESS_ROLE } from '@configs/authConfig';
-import { COMMON_QUERY } from '@schemas/index';
 import { NEWS_QUERY } from '@schemas/news';
 
 import { createChildRouter } from '@utils/router';
@@ -12,8 +11,7 @@ import { newsController } from '@controllers/newsController';
 
 const router = createChildRouter();
 const { admin } = ACCESS_ROLE;
-const { newsIds } = NEWS_QUERY;
-const { isNeedCommon, limit } = COMMON_QUERY;
+const { newsId } = NEWS_QUERY;
 
 router.post(
     '/create',
@@ -21,11 +19,7 @@ router.post(
     requireSchemaValidator('http://example.com/schemas/news/creation'),
     newsController.postCreateNews
 );
-router.get(
-    '/get',
-    ...requireQueryValidator(newsIds, isNeedCommon, limit),
-    newsController.getGetNews
-);
+router.get('/get', newsController.getGetNews);
 router.put(
     '/edit',
     requireAuth([admin]),
@@ -34,7 +28,7 @@ router.put(
 );
 router.delete(
     '/delete',
-    ...requireQueryValidator(newsIds),
+    ...requireQueryValidator(newsId),
     requireAuth([admin]),
     newsController.deleteNews
 );

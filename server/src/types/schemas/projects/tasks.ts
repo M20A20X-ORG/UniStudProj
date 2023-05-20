@@ -6,9 +6,9 @@ export type TAssignedUser = Pick<TUser, 'userId' | 'username'>;
 export type TProjectTask = TProjectId & {
     taskId: number;
     name: string;
-    description?: string;
-    status: TTaskStatus;
-    assignUser: TAssignedUser;
+    description: string;
+    status: TTaskStatus | null;
+    assignUser: TAssignedUser | null;
     tags: TTag[];
 };
 
@@ -19,9 +19,9 @@ export type TTaskCreation = TProjectId &
     Pick<TProjectTask, 'name' | 'description'> & {
         assignUserId: number;
         statusId: number;
-        tagIds: Array<number>;
+        newTagIds: Array<number>;
     };
 export type TTaskEdit = TTaskId &
     TProjectId &
     Partial<TTaskCreation & { deleteTagIds: Array<number> }>;
-export type TTaskEditCommon = Omit<TTaskEdit, 'tagIds' | 'deleteTagIds'>;
+export type TTaskEditCommon = Omit<TTaskEdit, 'newTagIds' | 'deleteTagIds'>;

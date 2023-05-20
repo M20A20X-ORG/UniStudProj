@@ -1,13 +1,18 @@
 import { QueryError } from 'mysql2';
 import { PoolConnection } from 'mysql2/promise';
 import { TDependency, TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
-import { TPayloadResponse, TResponse } from '@type/schemas/response';
+import { TResponse } from '@type/schemas/response';
 import { TTag } from '@type/schemas/projects/project';
-import { TProjectTask, TTaskCreation, TTaskEdit, TTaskId } from '@type/schemas/projects/tasks';
+import {
+    TProjectTask,
+    TTaskCreation,
+    TTaskEdit,
+    TTaskId,
+    TTaskStatus
+} from '@type/schemas/projects/tasks';
 
 import { DataAddingError } from '@exceptions/DataAddingError';
 import { DataDeletionError } from '@exceptions/DataDeletionError';
-import { NoDataError } from '@exceptions/NoDataError';
 import { DataModificationError } from '@exceptions/DataModificationError';
 
 import { COMMON_SQL } from '@static/sql/common';
@@ -23,24 +28,26 @@ const { getSelectLastInsertId } = COMMON_SQL;
 
 type TTasksRaw = Array<
     TProjectTask & {
-        tempUserId: number;
-        tempUsername: string;
-        tempStatusId: number;
-        tempStatus: string;
+        userId: number;
+        username: string;
+        statusId: number;
+        status: string;
     }
 >;
 
 interface TasksService {
-    getTasks: (...taskIds: number[]) => Promise<TPayloadResponse<TProjectTask[]>>;
+    getTaskStatuses: () => Promise<TResponse<TTaskStatus[]>>;
+    getTaskTags: () => Promise<TResponse<TTag[]>>;
+    getTasks: (...taskIds: number[]) => Promise<TResponse<TProjectTask[]>>;
     createTask: (taskData: TTaskCreation) => Promise<TResponse>;
-    editTask: (taskData: TTaskEdit) => Promise<TPayloadResponse<TProjectTask[]>>;
+    editTask: (taskData: TTaskEdit) => Promise<TResponse>;
     deleteTask: (projectId: number, taskId: number) => Promise<TResponse>;
 }
 
 class TasksServiceImpl implements TasksService {
     ///// Private /////
     private _insertProjectCommon = async (
-        taskCommonData: Omit<TTaskCreation, 'tagIds'>,
+        taskCommonData: Omit<TTaskCreation, 'newTagIds'>,
         connection: PoolConnection
     ) => {
         const { insertTask } = createSql;
@@ -125,34 +132,66 @@ class TasksServiceImpl implements TasksService {
         }
     };
 
-    public getTasks = async (projectId: number): Promise<TPayloadResponse<TProjectTask[]>> => {
-        const { selectTasks, selectTags } = readSql;
+    public getTaskTags = async (): Promise<TResponse<TTag[]>> => {
+        const { selectTags } = readSql;
+
+        const dbTagsResponse: TReadQueryResponse = await sqlPool.query(selectTags);
+        const dbTags = dbTagsResponse?.[0];
+        if (!Array.isArray(dbTags)) return { message: 'Error getting task tags' };
+        const tags = dbTags as TTag[];
+
+        return {
+            message: `Successfully get task tags`,
+            payload: tags
+        };
+    };
+
+    public getTaskStatuses = async (): Promise<TResponse<TTaskStatus[]>> => {
+        const { selectStatuses } = readSql;
+
+        const dbStatuesResponse: TReadQueryResponse = await sqlPool.query(selectStatuses);
+        const dbStatuses = dbStatuesResponse?.[0];
+        if (!Array.isArray(dbStatuses)) return { message: 'Error getting task statuses' };
+        const statuses = dbStatuses as TTaskStatus[];
+
+        return {
+            message: `Successfully get task statuses`,
+            payload: statuses
+        };
+    };
+
+    public getTasks = async (projectId: number): Promise<TResponse<TProjectTask[]>> => {
+        const { selectTasks, selectTagsOfProjects } = readSql;
 
         const dbTasksResponse: TReadQueryResponse = await sqlPool.query(selectTasks, [projectId]);
         const [dbTasks] = dbTasksResponse;
-        if (!dbTasks.length) throw new NoDataError(`No project found, id: '${projectId}'`);
+        if (!dbTasks.length)
+            return { message: 'No tasks found for scpecified project, id: ' + projectId };
         const tasksRaw = dbTasks as TTasksRaw;
         const tasks: TProjectTask[] = tasksRaw.map((taskRaw) => {
-            const { tempUserId, tempUsername, tempStatusId, tempStatus, ...task } = taskRaw;
-            task.assignUser = { userId: tempUserId, username: tempUsername };
-            task.status = { statusId: tempStatusId, status: tempStatus };
+            const { userId, username, statusId, status, ...taskRawRest } = taskRaw;
+            const task: TProjectTask = {
+                ...taskRawRest,
+                assignUser: userId ? { userId, username } : null,
+                status: statusId ? { statusId, status } : null
+            };
             return task;
         });
 
-        const dbTagsResponse: TReadQueryResponse = await sqlPool.query(selectTags, [projectId]);
+        const dbTagsResponse: TReadQueryResponse = await sqlPool.query(selectTagsOfProjects, [
+            projectId
+        ]);
         const [dbTags] = dbTagsResponse;
-        if (dbTags.length) {
+
+        tasks.forEach((task) => {
             const tags = dbTags as Array<TDependency<TTaskId, TTag>>;
-            tasks.forEach(
-                (task) =>
-                    (task.tags = tags
-                        .filter((tag) => tag.taskId === task.taskId)
-                        .map((tag) => {
-                            delete tag['taskId'];
-                            return tag;
-                        }))
-            );
-        }
+            task.tags = tags
+                .filter((tag) => tag.taskId === task.taskId)
+                .map((tag) => {
+                    delete tag['taskId'];
+                    return tag;
+                });
+        });
 
         return {
             message: `Successfully got tasks, project id: '${projectId}'`,
@@ -161,7 +200,7 @@ class TasksServiceImpl implements TasksService {
     };
 
     public createTask = async (taskData: TTaskCreation): Promise<TResponse> => {
-        const { tagIds, ...taskCommonData } = taskData;
+        const { newTagIds, ...taskCommonData } = taskData;
 
         const connection = await sqlPool.getConnection();
         try {
@@ -175,7 +214,7 @@ class TasksServiceImpl implements TasksService {
             if (!dbNewTaskId) throw new DataAddingError("Can't add new task!");
             const { taskId: newTaskId } = dbNewTaskId as TTaskId;
 
-            if (tagIds.length) await this._insertTags(newTaskId, tagIds, connection);
+            if (newTagIds.length) await this._insertTags(newTaskId, newTagIds, connection);
             await connection.commit();
         } catch (error: unknown) {
             await connection.rollback();
@@ -187,19 +226,21 @@ class TasksServiceImpl implements TasksService {
         return { message: `Successfully added new task, name: '${taskCommonData.name}'` };
     };
 
-    public editTask = async (taskData: TTaskEdit): Promise<TPayloadResponse<TProjectTask[]>> => {
+    public editTask = async (taskData: TTaskEdit): Promise<TResponse> => {
         const { getUpdateTaskCommon, getUpdateTagsSql } = updateSql;
-        const { tagIds, deleteTagIds, ...taskCommonData } = taskData;
+        const { newTagIds, deleteTagIds, ...taskCommonData } = taskData;
 
         const connection = await sqlPool.getConnection();
         try {
             await connection.beginTransaction();
             try {
                 const updateTaskCommonSql = getUpdateTaskCommon(taskCommonData);
-                const dbTaskCommon: TModifyQueryResponse = await connection.query(
-                    updateTaskCommonSql
-                );
-                log.debug(dbTaskCommon);
+                if (updateTaskCommonSql) {
+                    const dbTaskCommon: TModifyQueryResponse = await connection.query(
+                        updateTaskCommonSql
+                    );
+                    log.debug(dbTaskCommon);
+                }
             } catch (error: unknown) {
                 const { code } = error as QueryError;
                 if (code === 'ER_NO_REFERENCED_ROW_2')
@@ -210,7 +251,7 @@ class TasksServiceImpl implements TasksService {
                 connection,
                 getUpdateTagsSql,
                 taskCommonData.taskId,
-                tagIds,
+                newTagIds,
                 deleteTagIds,
                 'tag'
             );
@@ -222,11 +263,7 @@ class TasksServiceImpl implements TasksService {
             connection.release();
         }
 
-        const { payload: tasks } = await this.getTasks(taskCommonData.projectId);
-        return {
-            message: `Successfully updated project task, name: '${taskCommonData.name}'`,
-            payload: tasks
-        };
+        return { message: `Successfully update project task, id: '${taskData.taskId}'` };
     };
 }
 

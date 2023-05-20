@@ -24,7 +24,7 @@ class UsersControllerImpl implements UsersController {
             const userId = parseInt(userIdParam as string);
 
             const serviceResponse = await usersService.deleteUser(userId);
-            return res.status(204).json(serviceResponse);
+            return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
             let responseStatus = 500;
@@ -35,12 +35,14 @@ class UsersControllerImpl implements UsersController {
 
     public getGetUser: RequestHandler = async (req, res) => {
         try {
-            const userIdentifiers = req.query.userIdentifiers as string[];
+            const userIdentifiers = (req.query.userIdentifiers as string[]) || [];
+            const limit = parseInt(req.query.limit as string) || 0;
             const userIds = userIdentifiers.map((id) => parseInt(id));
             const isIdsCorrect = userIds.every((id) => !isNaN(id));
 
             const serviceResponse = await usersService.getUsers(
-                isIdsCorrect ? userIds : userIdentifiers
+                isIdsCorrect ? userIds : userIdentifiers,
+                limit
             );
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {

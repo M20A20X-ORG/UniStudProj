@@ -1,0 +1,18 @@
+{
+  "include": [
+    "dist/src/**"
+  ],
+  "exclude": [
+    "dist/specs/**"
+  ],
+  "extension": [
+    ".js"
+  ],
+  "branches": 55,
+  "lines": 55,
+  "functions": 55,
+  "statements": 55,
+  "report-dir": "./coverage",
+  "check-coverage": true,
+  "all": true
+}

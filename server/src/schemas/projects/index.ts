@@ -19,6 +19,7 @@ export const PROJECT_FORMATS = {
 export const PROJECT_QUERY = {
     projectId: query('projectId', 'projectId must be a number >= 1').isInt(),
     projectIds: query('projectIds', 'projectIds must be an array of numbers >= 1')
+        .optional()
         .isArray()
-        .custom((projectIds: any[]) => projectIds.every((elem) => !isNaN(elem) && elem >= 1))
+        .custom((elem: any) => !isNaN(elem) && elem >= 1)
 };

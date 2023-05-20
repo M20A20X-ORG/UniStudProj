@@ -48,7 +48,7 @@ class AuthControllerImpl implements AuthController {
             return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
-            if (error instanceof NoDataError) {
+            if (error instanceof NoDataError || error instanceof RefreshTokenError) {
                 log.warn(message);
                 return res.status(404).json({ message } as TResponse);
             }

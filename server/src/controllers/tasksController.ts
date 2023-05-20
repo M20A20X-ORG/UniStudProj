@@ -35,11 +35,31 @@ class TasksControllerImpl implements TasksController {
         }
     };
 
+    public getGetTaskTags: RequestHandler = async (req, res) => {
+        try {
+            const serviceResponse = await tasksService.getTaskTags();
+            return res.status(200).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            return sendResponse(res, 500, message, stack);
+        }
+    };
+
+    public getGetTaskStatuses: RequestHandler = async (req, res) => {
+        try {
+            const serviceResponse = await tasksService.getTaskStatuses();
+            return res.status(200).json(serviceResponse);
+        } catch (error: unknown) {
+            const { message, stack } = error as Error;
+            return sendResponse(res, 500, message, stack);
+        }
+    };
+
     public getGetTask: RequestHandler = async (req, res) => {
         try {
             const projectId = parseInt(req.query.projectId as string);
             const serviceResponse = await tasksService.getTasks(projectId);
-            return res.status(201).json(serviceResponse);
+            return res.status(200).json(serviceResponse);
         } catch (error: unknown) {
             const { message, stack } = error as Error;
             let responseStatus = 500;

@@ -15,7 +15,7 @@ export const editSchema: TEditSchema = {
                 description: { type: 'string', nullable: true },
                 dateStart: { type: 'string', nullable: true },
                 dateEnd: { type: 'string', nullable: true },
-                tagIds: {
+                newTagIds: {
                     type: 'array',
                     items: { type: 'integer' } as any,
                     minItems: 0,
@@ -29,7 +29,7 @@ export const editSchema: TEditSchema = {
                     maxItems: 50,
                     nullable: true
                 },
-                participantIds: {
+                newParticipantIds: {
                     type: 'array',
                     items: { $ref: '/schemas/project/participantIds' } as any,
                     minItems: 0,

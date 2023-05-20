@@ -1,10 +1,10 @@
 import { compareSync } from 'bcrypt';
 
 import { QueryError } from 'mysql2';
-import { TReadQueryResponse, TModifyQueryResponse } from '@type/sql';
-import { TAuthPayload, TRefreshToken, TUserLogin } from '@type/schemas/auth';
-import { TAuthResponse, TPayloadResponse } from '@type/schemas/response';
-import { TUser, TUserPublic } from '@type/schemas/user';
+import { TModifyQueryResponse, TReadQueryResponse } from '@type/sql';
+import { TAuthPayload, TRefreshToken, TUserAuthPayload, TUserLogin } from '@type/schemas/auth';
+import { TResponse } from '@type/schemas/response';
+import { TUserPrivate } from '@type/schemas/user';
 
 import { NoDataError } from '@exceptions/NoDataError';
 import { RefreshTokenError } from '@exceptions/RefreshTokenError';
@@ -15,23 +15,18 @@ import { log } from '@configs/loggerConfig';
 import { sqlPool } from '@configs/sqlPoolConfig';
 import { auth } from '@configs/authConfig';
 
-type TLoginResponse = TAuthResponse & TPayloadResponse<TUserPublic>;
-
 const { refreshTokenSql, loginSql } = AUTH_SQL;
 
 interface AuthService {
-    refreshJwtToken: (
-        refreshToken: string,
-        accessIp: string
-    ) => Promise<TPayloadResponse<TAuthResponse>>;
-    loginUser: (userCredentials: TUserLogin, accessIp: string) => Promise<TLoginResponse>;
+    refreshJwtToken: (refreshToken: string, accessIp: string) => Promise<TResponse<TAuthPayload>>;
+    loginUser: (userCredentials: TUserLogin, accessIp: string) => Promise<TResponse<TAuthPayload>>;
 }
 
 class AuthServiceImpl implements AuthService {
     public refreshJwtToken = async (
         refreshToken: string,
         accessIp: string
-    ): Promise<TPayloadResponse<TAuthResponse>> => {
+    ): Promise<TResponse<TAuthPayload>> => {
         const { selectToken, deleteToken, selectUser } = refreshTokenSql;
 
         const dbTokenResponse: TReadQueryResponse = await sqlPool.query(selectToken, [
@@ -55,18 +50,19 @@ class AuthServiceImpl implements AuthService {
         const dbUserResponse: TReadQueryResponse = await sqlPool.query(selectUser, [userId]);
         const [[dbUser]] = dbUserResponse;
         if (!dbUser) throw new NoDataError(`No user was found for this session`);
+        const user = dbUser as TUserAuthPayload;
 
-        const accessToken = auth.createJwtToken(dbUser as TAuthPayload);
+        const accessToken = auth.createJwtToken(user);
         return {
             message: `Successfully refreshed access token!`,
-            payload: { accessToken, refreshToken }
+            payload: { ...user, accessToken, refreshToken }
         };
     };
 
     public loginUser = async (
         userCredentials: TUserLogin,
         accessIp: string
-    ): Promise<TLoginResponse> => {
+    ): Promise<TResponse<TAuthPayload>> => {
         const { username, password } = userCredentials;
         const { selectUserData, insertRefreshToken } = loginSql;
 
@@ -77,7 +73,8 @@ class AuthServiceImpl implements AuthService {
         const [[dbUserData]] = dbUserDataResponse;
         if (!dbUserData) throw new NoDataError('No user found for this credentials!');
 
-        const { password: passwordHash = '', ...user } = dbUserData as TUser;
+        const { password: passwordHash, ...user } = dbUserData as TUserPrivate;
+
         const isPasswordCorrect = compareSync(password, passwordHash);
         if (!isPasswordCorrect) throw new NoDataError(`Incorrect username or password!`);
 
@@ -93,15 +90,26 @@ class AuthServiceImpl implements AuthService {
         } catch (error: unknown) {
             const { code } = error as QueryError;
             if (code === 'ER_DUP_ENTRY')
-                throw new RefreshTokenError(`User '${username}' already logged in!`);
+                return {
+                    message: `Successfully logged in user, username: ${username}`,
+                    payload: {
+                        userId: user.userId,
+                        role: user.role,
+                        accessToken,
+                        refreshToken
+                    }
+                };
             else throw error;
         }
 
         return {
             message: `Successfully logged in user, username: ${username}`,
-            payload: user,
-            accessToken,
-            refreshToken
+            payload: {
+                userId: user.userId,
+                role: user.role,
+                accessToken,
+                refreshToken
+            }
         };
     };
 }

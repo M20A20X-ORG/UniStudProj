@@ -13,7 +13,7 @@ const { user, admin } = ACCESS_ROLE;
 router.post(
     '/create',
     requireAuth([admin, user]),
-    requireFileUpload('array', 'file', ['png', 'jpg']),
+    requireFileUpload('single', 'file', ['png', 'jpg']),
     resourceController.postCreateResource
 );
 

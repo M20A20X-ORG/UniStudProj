@@ -13,16 +13,7 @@ export const requireSchemaValidator = (schema: string): RequestHandler => {
         if (validate(req.body)) {
             return next();
         } else if (validate.errors) {
-            const [error] = validate.errors;
-            const { params, keyword, instancePath } = error;
-
-            let errMessage = error.message ?? '';
-            if (keyword === 'required' || keyword === 'type' || keyword === 'minItems')
-                errMessage = `'${instancePath}' ${error.message}`;
-            else if (keyword === 'format')
-                errMessage = `'${instancePath}' must match format: '${ajv.formats[params.format]}'`;
-
-            const { message } = new SchemaValidationError(errMessage);
+            const { message } = new SchemaValidationError(JSON.stringify(validate.errors));
             return sendResponse(res, 400, message, undefined);
         }
     };

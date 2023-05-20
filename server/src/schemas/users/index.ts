@@ -18,10 +18,13 @@ export const USER_FORMAT = {
 };
 
 export const USER_QUERY = {
+    userId: check('userId', `userId must be a number >= 1`).isInt(),
+    userIdOpt: check('userId', `userId must be a number >= 1`).optional().isInt(),
     userIdentifiers: check(
         'userIdentifiers',
         `userIdentifiers must be an array of numbers >= 1 or strings with pattern ${USER_FORMAT.userUsername}}`
     )
+        .optional()
         .isArray()
         .custom((id) => !isNaN(id) || USER_FORMAT.userUsername.test(id))
 };

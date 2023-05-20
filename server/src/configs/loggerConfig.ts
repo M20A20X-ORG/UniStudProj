@@ -5,7 +5,7 @@ import path from 'path';
 import { TLogConfig, TLogger, TLogHandler, TLogHelper } from '@type/logger';
 
 import { concat } from '@utils/concat';
-import { getIsoDate } from '@utils/date';
+import { getDbDate } from '@utils/date';
 
 interface Logger {
     info: TLogger;
@@ -37,7 +37,7 @@ class LoggerImpl implements Logger {
     private readonly _fileLogger: TLogger;
 
     private _logHelper: TLogHelper = ([logHandler, level], ...data) => {
-        const prefix = `${getIsoDate()} [${level}]:`;
+        const prefix = `${getDbDate()} [${level}]:`;
         logHandler(prefix, ...data);
         this._fileLogger(prefix, ...data);
     };

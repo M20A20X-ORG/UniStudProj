@@ -1,7 +1,11 @@
 import { JSONSchemaType } from 'ajv';
 import { TTaskCreation, TTaskJson } from '@type/schemas/projects/tasks';
 
-type TCreationSchema = JSONSchemaType<TTaskJson<TTaskCreation>>;
+type TTaskCreationNulls = Omit<TTaskCreation, 'assignUserId' | 'statusId'> & {
+    assignUserId?: number;
+    statusId?: number;
+};
+type TCreationSchema = JSONSchemaType<TTaskJson<TTaskCreationNulls>>;
 
 export const creationSchema: TCreationSchema = {
     $id: 'http://example.com/schemas/project/task/create',
@@ -11,11 +15,11 @@ export const creationSchema: TCreationSchema = {
             type: 'object',
             properties: {
                 name: { type: 'string', format: 'taskName' },
-                description: { type: 'string', nullable: true },
-                statusId: { type: 'number' },
+                description: { type: 'string' },
+                statusId: { type: 'number', nullable: true },
                 projectId: { type: 'number' },
-                assignUserId: { type: 'number', minimum: 1 },
-                tagIds: {
+                assignUserId: { type: 'number', minimum: 1, nullable: true },
+                newTagIds: {
                     type: 'array',
                     items: { type: 'integer', minimum: 1 } as any,
                     minItems: 0,
@@ -23,7 +27,7 @@ export const creationSchema: TCreationSchema = {
                 }
             },
             additionalProperties: false,
-            required: ['name', 'projectId', 'statusId', 'assignUserId', 'tagIds']
+            required: ['name', 'projectId', 'description', 'newTagIds']
         }
     },
     additionalProperties: false,

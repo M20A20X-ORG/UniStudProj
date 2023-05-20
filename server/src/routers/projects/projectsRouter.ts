@@ -10,12 +10,15 @@ import { requireAuth } from '@middleware/requireAuth';
 import { requireQueryValidator } from '@middleware/requireQueryValidator';
 
 import { projectsController } from '@controllers/projectsController';
+import { COMMON_QUERY } from '@schemas/index';
 
 const router = createChildRouter();
 const { user, admin } = ACCESS_ROLE;
 const { projectId, projectIds } = PROJECT_QUERY;
+const { limit } = COMMON_QUERY;
 
-router.get('/get', ...requireQueryValidator(projectIds), projectsController.getGetProject);
+router.get('/tags/get', ...requireQueryValidator(limit), projectsController.getGetTags);
+router.get('/get', ...requireQueryValidator(projectIds, limit), projectsController.getGetProject);
 router.post(
     '/create',
     requireAuth([user, admin]),

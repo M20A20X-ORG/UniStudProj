@@ -1,1 +1,2 @@
-export const getIsoDate = (): string => new Date().toISOString().replace(/:/g, '-');
+export const getDbDate = (date = new Date()): string =>
+    date.toISOString().slice(0, -5).replace('T', ' ');

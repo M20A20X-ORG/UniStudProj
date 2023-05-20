@@ -13,6 +13,7 @@ export const editSchema: TEditSchema = {
                 userId: { type: 'number', minimum: 0 },
                 name: { type: 'string', nullable: true, format: 'userFullName', maxLength: 30 },
                 email: { type: 'string', nullable: true, format: 'userEmail', maxLength: 30 },
+                imgUrl: { type: 'string', nullable: true, maxLength: 200 },
                 username: {
                     type: 'string',
                     nullable: true,
